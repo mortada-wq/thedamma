@@ -118,6 +118,23 @@ export function isBotCheckError(err: unknown): boolean {
   return /confirm you.?re not a bot|Sign in to confirm|cookies/i.test(msg);
 }
 
+export function isVideoUnavailableError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return /Video unavailable|Private video|This video is not available/i.test(msg);
+}
+
+export async function fetchYouTubeOEmbedTitle(url: string): Promise<string | null> {
+  try {
+    const endpoint = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`;
+    const res = await fetch(endpoint, { signal: AbortSignal.timeout(10_000) });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { title?: string };
+    return typeof data.title === "string" && data.title.trim() ? data.title.trim() : null;
+  } catch {
+    return null;
+  }
+}
+
 function runYtDlp(
   args: string[],
   timeoutMs: number,

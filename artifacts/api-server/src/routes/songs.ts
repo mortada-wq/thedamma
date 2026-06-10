@@ -3,6 +3,7 @@ import { desc, eq } from "drizzle-orm";
 import { db, songsTable, type Song as DbSong } from "@workspace/db";
 import { GenerateSongBody, GetSongParams, DeleteSongParams } from "@workspace/api-zod";
 import { classifyInput, generateSongMetadata, isAllowedYouTubeUrl, isBotCheckError } from "../lib/songMetadata";
+import { isVideoUnavailableError, fetchYouTubeOEmbedTitle } from "../lib/audioExtraction";
 
 const router: IRouter = Router();
 
@@ -83,6 +84,32 @@ router.post("/songs", async (req, res) => {
         error:
           "YouTube is currently blocking automated access from this server. This usually affects the published app. Adding a YTDLP_COOKIES secret resolves it.",
       });
+    }
+    if (inputType === "youtube" && isVideoUnavailableError(err)) {
+      req.log.info({ input }, "Video unavailable — attempting oEmbed title fallback");
+      const oEmbedTitle = await fetchYouTubeOEmbedTitle(input);
+      if (oEmbedTitle) {
+        req.log.info({ oEmbedTitle }, "oEmbed title retrieved; falling back to name-based generation");
+        try {
+          metadata = await generateSongMetadata(oEmbedTitle, "name");
+        } catch (fallbackErr) {
+          req.log.error({ fallbackErr }, "Name-based fallback generation failed");
+          return res.status(502).json({ error: "Could not generate metadata for this song. Please try again." });
+        }
+        const [row] = await db
+          .insert(songsTable)
+          .values({
+            title: metadata.title || oEmbedTitle,
+            singer: metadata.singer || "Unknown",
+            era: metadata.era || "Unknown",
+            geography: metadata.geography || "Unknown",
+            inputType: "name",
+            inputValue: oEmbedTitle,
+            metadata,
+          })
+          .returning();
+        return res.status(201).json(serialize(row));
+      }
     }
     return res.status(502).json({
       error:

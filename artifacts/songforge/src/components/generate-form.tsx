@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useGenerateSong, getListSongsQueryKey, getGetSongStatsQueryKey } from "@workspace/api-client-react";
+import { useGenerateSong, getListSongsQueryKey, getGetSongStatsQueryKey, ApiError } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Sparkles, ArrowRight, Loader2, Music4 } from "lucide-react";
@@ -36,10 +36,11 @@ export function GenerateForm() {
         });
         setLocation(`/song/${song.id}`);
       },
-      onError: () => {
+      onError: (err) => {
+        const serverMessage = (err as ApiError<{ error?: string }>).data?.error;
         toast({
           title: "Generation failed",
-          description: "Could not process the song. Please verify the input and try again.",
+          description: serverMessage ?? "Could not process the song. Please verify the input and try again.",
           variant: "destructive",
         });
       }
