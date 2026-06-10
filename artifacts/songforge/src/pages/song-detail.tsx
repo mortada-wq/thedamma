@@ -72,7 +72,7 @@ export function SongDetail() {
       <div className="text-center py-20">
         <h2 className="text-2xl font-serif font-bold text-foreground">Dossier not found</h2>
         <p className="text-muted-foreground mt-2 mb-6">This song may have been removed or does not exist.</p>
-        <Link href="/" className="inline-flex items-center text-primary font-medium hover:underline">
+        <Link href="/" className="inline-flex items-center text-brand-blue font-medium hover:underline">
           <ArrowLeft className="w-4 h-4 mr-2" /> Return to Library
         </Link>
       </div>
@@ -94,13 +94,13 @@ export function SongDetail() {
           <ArrowLeft className="w-4 h-4 mr-2" /> Back to Library
         </Link>
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" onClick={handleExport} data-testid="button-export-single">
+          <Button variant="outline" size="sm" onClick={handleExport} className="rounded-full bg-transparent border-brand-blue/50 text-brand-blue hover:bg-brand-blue/10 hover:text-brand-blue active:scale-[0.98] transition-transform" data-testid="button-export-single">
             <Download className="w-4 h-4 mr-2" /> Export JSON
           </Button>
 
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="outline" size="sm" className="text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/20" data-testid="button-delete">
+              <Button variant="outline" size="sm" className="rounded-full text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/40 active:scale-[0.98] transition-transform" data-testid="button-delete">
                 <Trash2 className="w-4 h-4 mr-2" /> Delete
               </Button>
             </AlertDialogTrigger>
@@ -127,17 +127,17 @@ export function SongDetail() {
 
       {/* Main Title Area */}
       <div className="mb-12 border-b border-border/60 pb-8">
-        <h1 className="text-4xl md:text-5xl font-serif font-bold text-foreground leading-tight mb-4">
+        <h1 className="font-song text-5xl md:text-6xl font-bold text-foreground leading-tight mb-4">
           {m.title}
         </h1>
         <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-muted-foreground">
           <div className="flex items-center gap-2 text-lg">
-            <User className="w-5 h-5 text-primary/80" />
+            <User className="w-5 h-5 text-brand-blue/80" />
             <span className="font-medium text-foreground">{m.singer}</span>
           </div>
           {m.composer && (
             <div className="flex items-center gap-2 text-lg">
-              <span className="text-sm uppercase tracking-wide font-semibold text-primary/60">BY</span>
+              <span className="text-sm uppercase tracking-wide font-semibold text-muted-foreground">BY</span>
               <span className="font-medium text-foreground">{m.composer}</span>
             </div>
           )}
@@ -185,7 +185,7 @@ export function SongDetail() {
                 <span className="block text-xs font-semibold text-muted-foreground mb-1">Voices</span>
                 <div className="flex flex-wrap gap-1.5">
                   {m.voices?.map(voice => (
-                    <span key={voice} className="text-xs px-2 py-1 bg-primary/10 text-primary rounded-md font-medium">{voice}</span>
+                    <span key={voice} className="text-xs px-2 py-1 bg-brand-blue/10 text-brand-blue rounded-md font-medium">{voice}</span>
                   ))}
                 </div>
               </div>
@@ -225,14 +225,14 @@ export function SongDetail() {
         <div className="lg:col-span-2 space-y-12">
           
           {/* History & Subject */}
-          <section className="prose prose-stone dark:prose-invert max-w-none">
-            <h2 className="flex items-center gap-2 font-serif text-2xl border-b border-border/50 pb-2 mb-4">
-              <BookOpen className="w-5 h-5 text-primary" />
+          <section className="prose prose-invert max-w-none">
+            <h2 className="flex items-center gap-2 text-2xl font-bold border-b border-border pb-2 mb-4">
+              <BookOpen className="w-5 h-5 text-brand-blue" />
               Historical Context
             </h2>
             <p className="text-lg leading-relaxed text-foreground/90">{m.history}</p>
             
-            <h3 className="text-lg font-serif mt-6">Primary Subject</h3>
+            <h3 className="text-lg font-bold mt-6">Primary Subject</h3>
             <p className="text-foreground/80">{m.subject}</p>
           </section>
 
@@ -240,7 +240,7 @@ export function SongDetail() {
           <section className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-card rounded-xl p-6 md:p-8 border border-border/50 shadow-sm">
             <div>
               <h2 className="flex items-center gap-2 font-serif text-xl mb-4 text-foreground">
-                <FileText className="w-5 h-5 text-primary" />
+                <FileText className="w-5 h-5 text-brand-blue" />
                 Transcription
               </h2>
               <div className="whitespace-pre-wrap font-mono text-sm leading-relaxed text-foreground/80 bg-background/50 p-4 rounded-lg border border-border/30">
@@ -249,10 +249,10 @@ export function SongDetail() {
             </div>
             <div>
               <h2 className="flex items-center gap-2 font-serif text-xl mb-4 text-foreground">
-                <Languages className="w-5 h-5 text-primary" />
+                <Languages className="w-5 h-5 text-brand-blue" />
                 Pronunciation
               </h2>
-              <div className="prose prose-sm prose-stone dark:prose-invert max-w-none text-foreground/80">
+              <div className="prose prose-sm prose-invert max-w-none text-foreground/80">
                 <p>{m.pronunciationNotes || "No pronunciation notes available."}</p>
               </div>
             </div>
@@ -261,7 +261,7 @@ export function SongDetail() {
           {/* Track Breakdown */}
           <section>
             <h2 className="flex items-center gap-2 font-serif text-2xl border-b border-border/50 pb-2 mb-8">
-              <Clock className="w-5 h-5 text-primary" />
+              <Clock className="w-5 h-5 text-brand-blue" />
               Interval Breakdown
             </h2>
             <Timeline segments={m.track || []} />

@@ -66,10 +66,10 @@ export function GenerateForm() {
   };
 
   return (
-    <div className="bg-card border border-border/60 rounded-xl p-8 shadow-sm relative overflow-hidden">
+    <div className="bg-card border border-border rounded-xl p-8 shadow-sm relative">
       <div className="relative z-10 max-w-2xl mx-auto">
         <div className="text-center mb-6">
-          <h2 className="text-2xl font-serif font-semibold text-foreground mb-2">
+          <h2 className="text-3xl font-bold text-foreground mb-2 tracking-tight">
             Catalog a New Work
           </h2>
           <p className="text-muted-foreground">
@@ -78,24 +78,24 @@ export function GenerateForm() {
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div className="relative">
-            <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-              <Music4 className="h-5 w-5 text-muted-foreground/60" />
+          <div className="prompt-glow relative bg-secondary">
+            <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none z-10">
+              <Music4 className="h-5 w-5 text-muted-foreground" />
             </div>
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="e.g. 'Jolene by Dolly Parton' or https://youtube.com/..."
-              className="pl-12 pr-4 py-6 text-lg bg-background/50 border-border/80 focus-visible:ring-primary shadow-inner"
+              className="pl-12 pr-4 py-6 text-base bg-transparent border-transparent rounded-[15px] focus-visible:ring-0 focus-visible:ring-offset-0"
               disabled={isPending}
               data-testid="input-song-generate"
             />
           </div>
           
           {isPending ? (
-            <div className="h-12 flex items-center justify-center gap-3 text-primary animate-pulse-slow">
+            <div className="h-12 flex items-center justify-center gap-3 text-brand-blue animate-pulse-slow">
               <Loader2 className="w-5 h-5 animate-spin" />
-              <span className="font-medium text-sm transition-all duration-300">
+              <span className="font-medium text-sm">
                 {LOADING_MESSAGES[loadingMsgIdx]}
               </span>
             </div>
@@ -103,7 +103,7 @@ export function GenerateForm() {
             <Button 
               type="submit" 
               size="lg" 
-              className="w-full sm:w-auto self-center px-8 shadow-sm transition-all hover:shadow-md"
+              className="w-full sm:w-auto self-center px-8 transition-transform duration-150 ease-out active:scale-[0.98]"
               disabled={!input.trim()}
               data-testid="button-generate"
             >
@@ -113,10 +113,6 @@ export function GenerateForm() {
           )}
         </form>
       </div>
-
-      {/* Decorative background element */}
-      <div className="absolute -top-24 -right-24 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
     </div>
   );
 }

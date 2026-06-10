@@ -1,0 +1,1 @@
+- [Sahib design language](sahib-design-language.md) — SongForge's visual system: obsidian dark, orange=single CTA only / blue=everything secondary, Aref Ruqaa for song titles only, kept LTR, no glows.

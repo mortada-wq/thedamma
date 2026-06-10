@@ -17,7 +17,7 @@ export function Home() {
         <div className="space-y-6">
           <div className="flex items-center justify-between border-b border-border/50 pb-2">
             <h2 className="text-xl font-serif font-bold text-foreground flex items-center gap-2">
-              <Library className="w-5 h-5 text-primary" />
+              <Library className="w-5 h-5 text-brand-blue" />
               Archive Library
             </h2>
             <div className="text-sm font-medium text-muted-foreground">
@@ -54,7 +54,7 @@ export function Home() {
       <div className="lg:w-80 shrink-0 space-y-6">
         <div className="bg-card rounded-xl border border-border/60 p-6 shadow-sm sticky top-24">
           <h3 className="font-serif text-lg font-bold border-b border-border/40 pb-3 mb-4 flex items-center gap-2">
-            <Activity className="w-4 h-4 text-primary" />
+            <Activity className="w-4 h-4 text-brand-blue" />
             Archive Stats
           </h3>
           

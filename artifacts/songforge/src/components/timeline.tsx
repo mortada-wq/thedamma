@@ -9,11 +9,11 @@ export function Timeline({ segments }: { segments: TrackSegment[] }) {
       {segments.map((segment, i) => (
         <div key={i} className="relative group">
           {/* Timeline dot */}
-          <div className="absolute -left-[31px] sm:-left-[39px] w-4 h-4 rounded-full bg-background border-2 border-primary/50 group-hover:border-primary transition-colors flex items-center justify-center mt-1.5" />
+          <div className="absolute -left-[31px] sm:-left-[39px] w-4 h-4 rounded-full bg-background border-2 border-brand-blue/50 group-hover:border-brand-blue transition-colors flex items-center justify-center mt-1.5" />
           
           <div className="flex flex-col gap-1 mb-2">
             <div className="flex items-center gap-3">
-              <span className="inline-flex items-center font-mono text-sm font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-md">
+              <span className="inline-flex items-center font-mono text-sm font-semibold text-brand-blue bg-brand-blue/10 px-2 py-0.5 rounded-md">
                 <Clock className="w-3.5 h-3.5 mr-1" />
                 {segment.timestamp}
               </span>

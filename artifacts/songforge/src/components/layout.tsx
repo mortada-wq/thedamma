@@ -34,13 +34,13 @@ export function Layout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-[100dvh] flex flex-col relative">
       <div className="noise-overlay" />
-      <header className="sticky top-0 z-40 w-full border-b border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header className="sticky top-0 z-40 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/70">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3 transition-opacity hover:opacity-80">
-            <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center text-primary-foreground shadow-sm">
+            <div className="w-8 h-8 rounded-[10px] bg-primary flex items-center justify-center text-primary-foreground shadow-sm">
               <Music className="w-5 h-5" />
             </div>
-            <span className="font-serif text-xl font-bold tracking-tight text-foreground">
+            <span className="text-xl font-bold tracking-tight text-foreground">
               SongForge
             </span>
           </Link>
@@ -48,11 +48,11 @@ export function Layout({ children }: { children: ReactNode }) {
             <Button
               variant="outline"
               size="sm"
-              className="gap-2 font-medium"
+              className="gap-2 font-medium rounded-full bg-transparent border-brand-blue/50 text-brand-blue hover:bg-brand-blue/10 hover:text-brand-blue active:scale-[0.98] transition-transform"
               onClick={handleExportLibrary}
               data-testid="button-export-library"
             >
-              <Download className="w-4 h-4 text-muted-foreground" />
+              <Download className="w-4 h-4" />
               Export RAG Library
             </Button>
           </div>

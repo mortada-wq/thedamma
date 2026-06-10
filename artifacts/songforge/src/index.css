@@ -1,4 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,100..900;1,9..144,100..900&family=Inter:wght@400;500;600&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 @plugin "@tailwindcss/typography";
@@ -40,6 +39,10 @@
   --color-destructive-foreground: hsl(var(--destructive-foreground));
   --color-destructive-border: var(--destructive-border);
 
+  --color-brand-blue: var(--brand-blue);
+  --color-accent-orange: hsl(var(--primary));
+  --color-accent-orange-2: var(--accent-orange-2);
+
   --color-sidebar: hsl(var(--sidebar));
   --color-sidebar-foreground: hsl(var(--sidebar-foreground));
   --color-sidebar-border: hsl(var(--sidebar-border));
@@ -53,76 +56,108 @@
 
   --font-sans: var(--app-font-sans);
   --font-serif: var(--app-font-serif);
+  --font-song: var(--app-font-song);
   --font-mono: var(--app-font-mono);
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  --radius-xl: calc(var(--radius) + 3px);
 }
 
+/*
+  Sahib (صاحب) design language applied to SongForge.
+  Canonical dark "obsidian canvas" theme. Anti-glare matte surfaces,
+  orange (#F7731E) as the single high-intent action color, blue (#5E94FF)
+  for secondary/navigation affordances. Short downward shadows, no glows.
+  Kept LTR because SongForge's chrome is English; Sahib's RTL rule is
+  specific to Arabic content.
+*/
 :root {
-  --button-outline: rgba(0,0,0, .10);
-  --badge-outline: rgba(0,0,0, .05);
+  color-scheme: dark;
+
+  --button-outline: rgba(255,255,255, .12);
+  --badge-outline: rgba(255,255,255, .08);
 
   --opaque-button-border-intensity: -8;
 
-  --elevate-1: rgba(0,0,0, .03);
-  --elevate-2: rgba(0,0,0, .08);
+  --elevate-1: rgba(255,255,255, .04);
+  --elevate-2: rgba(255,255,255, .08);
 
-  --background: 42 40% 96%;
-  --foreground: 20 30% 15%;
+  /* canvas-bg #121212 */
+  --background: 0 0% 7%;
+  /* text-primary #ececec */
+  --foreground: 0 0% 93%;
 
-  --border: 35 25% 85%;
-  --input: 35 25% 85%;
-  --ring: 15 60% 40%;
+  /* surface-edge #262626 */
+  --border: 0 0% 15%;
+  /* surface-2 #2b2b2b */
+  --input: 0 0% 17%;
+  /* accent-orange */
+  --ring: 24 93% 54%;
 
-  --card: 42 50% 98%;
-  --card-foreground: 20 30% 15%;
-  --card-border: 35 25% 88%;
+  /* surface-1 #1e1e1e */
+  --card: 0 0% 12%;
+  --card-foreground: 0 0% 93%;
+  --card-border: 0 0% 15%;
 
-  --sidebar: 42 50% 98%;
-  --sidebar-foreground: 20 30% 15%;
-  --sidebar-border: 35 25% 88%;
-  --sidebar-primary: 15 60% 40%;
-  --sidebar-primary-foreground: 40 40% 96%;
-  --sidebar-accent: 35 30% 90%;
-  --sidebar-accent-foreground: 20 30% 15%;
-  --sidebar-ring: 15 60% 40%;
+  --sidebar: 0 0% 12%;
+  --sidebar-foreground: 0 0% 93%;
+  --sidebar-border: 0 0% 15%;
+  --sidebar-primary: 24 93% 54%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 0 0% 20%;
+  --sidebar-accent-foreground: 0 0% 93%;
+  --sidebar-ring: 24 93% 54%;
 
-  --popover: 42 50% 98%;
-  --popover-foreground: 20 30% 15%;
-  --popover-border: 35 25% 88%;
+  --popover: 0 0% 12%;
+  --popover-foreground: 0 0% 93%;
+  --popover-border: 0 0% 15%;
 
-  --primary: 15 60% 40%;
-  --primary-foreground: 40 40% 96%;
+  /* accent-orange #F7731E */
+  --primary: 24 93% 54%;
+  --primary-foreground: 0 0% 100%;
 
-  --secondary: 35 25% 85%;
-  --secondary-foreground: 20 30% 15%;
+  /* surface-2 + text-secondary */
+  --secondary: 0 0% 17%;
+  --secondary-foreground: 0 0% 77%;
 
-  --muted: 35 30% 90%;
-  --muted-foreground: 25 15% 45%;
+  --muted: 0 0% 17%;
+  --muted-foreground: 0 0% 56%;
 
-  --accent: 35 30% 90%;
-  --accent-foreground: 20 30% 15%;
+  /* surface-3 #333333 (hover layers) */
+  --accent: 0 0% 20%;
+  --accent-foreground: 0 0% 93%;
 
-  --destructive: 0 70% 45%;
-  --destructive-foreground: 40 40% 96%;
+  /* danger #B93030 */
+  --destructive: 0 59% 46%;
+  --destructive-foreground: 0 0% 93%;
 
-  --chart-1: 15 60% 40%;
-  --chart-2: 30 50% 50%;
-  --chart-3: 45 40% 55%;
-  --chart-4: 20 40% 30%;
-  --chart-5: 10 50% 45%;
+  --chart-1: 24 93% 54%;
+  --chart-2: 220 100% 68%;
+  --chart-3: 28 98% 42%;
+  --chart-4: 0 0% 56%;
+  --chart-5: 0 0% 77%;
 
-  --app-font-sans: 'Inter', sans-serif;
-  --app-font-serif: 'Fraunces', Georgia, serif;
-  --app-font-mono: Menlo, monospace;
-  --radius: 0.3rem;
-  
-  --shadow-sm: 0px 1px 2px 0px rgba(30, 20, 10, 0.05);
-  --shadow: 0px 2px 4px -1px rgba(30, 20, 10, 0.06), 0px 1px 2px -1px rgba(30, 20, 10, 0.04);
-  --shadow-md: 0px 4px 6px -1px rgba(30, 20, 10, 0.08), 0px 2px 4px -2px rgba(30, 20, 10, 0.04);
+  /* brand accents (used raw, not via hsl wrapper) */
+  --brand-blue: #5E94FF;
+  --accent-orange-2: #D46402;
+
+  /* Latin fallback chain for the (unshippable) Muna chrome face.
+     Tajawal is an unapproved substitution; IBM Plex Sans Arabic carries Latin well. */
+  --app-font-sans: 'IBM Plex Sans Arabic', 'Tajawal', ui-sans-serif, system-ui, sans-serif;
+  --app-font-serif: 'IBM Plex Sans Arabic', 'Tajawal', ui-sans-serif, system-ui, sans-serif;
+  /* Aref Ruqaa — song titles only. */
+  --app-font-song: 'Aref Ruqaa', Georgia, serif;
+  --app-font-mono: 'IBM Plex Mono', Menlo, monospace;
+
+  /* Sahib radii scale 6 / 10 / 14 / 17 / 27 — anchored so cards land near 14. */
+  --radius: 0.875rem;
+
+  /* Short, downward, low-opacity. No glows (§7). */
+  --shadow-sm: 0 1px 1px 0 rgba(0,0,0,0.25);
+  --shadow: 1px 1px 1px 0 rgba(0,0,0,0.25);
+  --shadow-md: 1px 1px 1px 0 rgba(0,0,0,0.25);
 
   --primary-border: hsl(var(--primary));
   --secondary-border: hsl(var(--secondary));
@@ -133,47 +168,38 @@
   --sidebar-accent-border: hsl(var(--sidebar-accent));
 }
 
+/* Force the obsidian canvas regardless of an applied `.dark` class. */
 .dark {
-  /* No dark mode needed, default to light mode to ensure the warm amber look always applies.
-     Unless specified, but keeping identical variables for dark to force the aesthetic. */
-  --background: 20 15% 10%;
-  --foreground: 40 30% 90%;
-
-  --border: 20 15% 20%;
-  --input: 20 15% 20%;
-  --ring: 15 60% 50%;
-
-  --card: 20 15% 13%;
-  --card-foreground: 40 30% 90%;
-  --card-border: 20 15% 20%;
-
-  --sidebar: 20 15% 13%;
-  --sidebar-foreground: 40 30% 90%;
-  --sidebar-border: 20 15% 20%;
-  --sidebar-primary: 15 60% 50%;
-  --sidebar-primary-foreground: 20 15% 10%;
-  --sidebar-accent: 20 15% 20%;
-  --sidebar-accent-foreground: 40 30% 90%;
-  --sidebar-ring: 15 60% 50%;
-
-  --popover: 20 15% 13%;
-  --popover-foreground: 40 30% 90%;
-  --popover-border: 20 15% 20%;
-
-  --primary: 15 60% 50%;
-  --primary-foreground: 20 15% 10%;
-
-  --secondary: 20 15% 20%;
-  --secondary-foreground: 40 30% 90%;
-
-  --muted: 20 15% 20%;
-  --muted-foreground: 40 20% 60%;
-
-  --accent: 20 15% 20%;
-  --accent-foreground: 40 30% 90%;
-
-  --destructive: 0 60% 40%;
-  --destructive-foreground: 40 30% 90%;
+  color-scheme: dark;
+  --background: 0 0% 7%;
+  --foreground: 0 0% 93%;
+  --border: 0 0% 15%;
+  --input: 0 0% 17%;
+  --ring: 24 93% 54%;
+  --card: 0 0% 12%;
+  --card-foreground: 0 0% 93%;
+  --card-border: 0 0% 15%;
+  --sidebar: 0 0% 12%;
+  --sidebar-foreground: 0 0% 93%;
+  --sidebar-border: 0 0% 15%;
+  --sidebar-primary: 24 93% 54%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 0 0% 20%;
+  --sidebar-accent-foreground: 0 0% 93%;
+  --sidebar-ring: 24 93% 54%;
+  --popover: 0 0% 12%;
+  --popover-foreground: 0 0% 93%;
+  --popover-border: 0 0% 15%;
+  --primary: 24 93% 54%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 0 0% 17%;
+  --secondary-foreground: 0 0% 77%;
+  --muted: 0 0% 17%;
+  --muted-foreground: 0 0% 56%;
+  --accent: 0 0% 20%;
+  --accent-foreground: 0 0% 93%;
+  --destructive: 0 59% 46%;
+  --destructive-foreground: 0 0% 93%;
 }
 
 @layer base {
@@ -188,6 +214,12 @@
   }
 }
 
+/* Aref Ruqaa song-title face. */
+.font-song {
+  font-family: var(--app-font-song);
+}
+
+/* Subtle matte grain — anti-glare, very light on the obsidian canvas. */
 .noise-overlay {
   position: fixed;
   top: 0;
@@ -196,27 +228,57 @@
   height: 100vh;
   pointer-events: none;
   z-index: 50;
-  opacity: 0.2;
+  opacity: 0.035;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
 }
 
-/* Loading animation for generation */
-@keyframes loadingPulse {
-  0% { opacity: 0.5; transform: scale(0.98); }
-  50% { opacity: 1; transform: scale(1); }
-  100% { opacity: 0.5; transform: scale(0.98); }
+/* Prompt-bar gradient rim sweep (§3.4 / §8): orange -> blue, 6s linear. */
+@property --sh-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
 }
 
+.prompt-glow {
+  position: relative;
+  border-radius: 17px;
+}
+.prompt-glow::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: linear-gradient(var(--sh-angle), #F7731E, #5E94FF, #F7731E);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: shPromptSweep 6s linear infinite;
+  pointer-events: none;
+}
+.prompt-glow:focus-within::before {
+  background: linear-gradient(var(--sh-angle), #F7731E, #5E94FF, #F7731E);
+  padding: 2px;
+}
+@keyframes shPromptSweep {
+  to { --sh-angle: 360deg; }
+}
+
+/* Loading animation for generation (no scale glow). */
+@keyframes loadingPulse {
+  0% { opacity: 0.55; }
+  50% { opacity: 1; }
+  100% { opacity: 0.55; }
+}
 .animate-pulse-slow {
-  animation: loadingPulse 3s ease-in-out infinite;
+  animation: loadingPulse 2.4s ease-in-out infinite;
 }
 
 @keyframes slideUpFade {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
-
 .animate-in-stagger {
-  animation: slideUpFade 0.5s ease-out forwards;
+  animation: slideUpFade 0.45s ease-out forwards;
   opacity: 0;
 }
