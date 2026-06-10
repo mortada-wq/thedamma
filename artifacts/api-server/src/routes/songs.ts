@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { desc, eq } from "drizzle-orm";
 import { db, songsTable, type Song as DbSong } from "@workspace/db";
 import { GenerateSongBody, GetSongParams, DeleteSongParams } from "@workspace/api-zod";
-import { classifyInput, generateSongMetadata, isAllowedYouTubeUrl, isBotCheckError } from "../lib/songMetadata";
+import { classifyInput, generateSongMetadata, generateFromKnowledgeOnly, isAllowedYouTubeUrl, isBotCheckError } from "../lib/songMetadata";
 import { isVideoUnavailableError, fetchYouTubeOEmbedTitle } from "../lib/audioExtraction";
 
 const router: IRouter = Router();
@@ -75,59 +75,74 @@ router.post("/songs", async (req, res) => {
   }
 
   let metadata;
+  let savedInputType = inputType;
+  let savedInputValue = input;
+
   try {
     metadata = await generateSongMetadata(input, inputType);
   } catch (err) {
-    req.log.error({ err }, "Song metadata generation failed");
+    req.log.error({ err }, "Primary generation failed");
+
     if (isBotCheckError(err)) {
-      return res.status(503).json({
-        error:
-          "YouTube is currently blocking automated access from this server. This usually affects the published app. Adding a YTDLP_COOKIES secret resolves it.",
-      });
-    }
-    if (inputType === "youtube" && isVideoUnavailableError(err)) {
+      // YouTube is blocking yt-dlp on this IP. Fall back to Gemini knowledge-only.
+      // For a URL we first resolve the video title via oEmbed (no auth needed).
+      let fallbackTitle: string | null = inputType === "name" ? input : null;
+      if (inputType === "youtube") {
+        fallbackTitle = await fetchYouTubeOEmbedTitle(input);
+        req.log.info({ fallbackTitle }, "Bot-check — resolved oEmbed title for knowledge fallback");
+      }
+      if (!fallbackTitle) {
+        return res.status(503).json({
+          error:
+            "YouTube is blocking automated access from this server. Paste the song title into the search box instead of a link.",
+        });
+      }
+      try {
+        req.log.info({ fallbackTitle }, "Falling back to knowledge-only generation");
+        metadata = await generateFromKnowledgeOnly(fallbackTitle);
+        savedInputType = "name";
+        savedInputValue = fallbackTitle;
+      } catch (fallbackErr) {
+        req.log.error({ fallbackErr }, "Knowledge-only fallback failed");
+        return res.status(503).json({
+          error: "YouTube is blocking access and the knowledge-only fallback also failed. Please try again.",
+        });
+      }
+    } else if (inputType === "youtube" && isVideoUnavailableError(err)) {
       req.log.info({ input }, "Video unavailable — attempting oEmbed title fallback");
       const oEmbedTitle = await fetchYouTubeOEmbedTitle(input);
       if (oEmbedTitle) {
-        req.log.info({ oEmbedTitle }, "oEmbed title retrieved; falling back to name-based generation");
+        req.log.info({ oEmbedTitle }, "oEmbed title retrieved; retrying as name-based search");
         try {
           metadata = await generateSongMetadata(oEmbedTitle, "name");
+          savedInputType = "name";
+          savedInputValue = oEmbedTitle;
         } catch (fallbackErr) {
           req.log.error({ fallbackErr }, "Name-based fallback generation failed");
           return res.status(502).json({ error: "Could not generate metadata for this song. Please try again." });
         }
-        const [row] = await db
-          .insert(songsTable)
-          .values({
-            title: metadata.title || oEmbedTitle,
-            singer: metadata.singer || "Unknown",
-            era: metadata.era || "Unknown",
-            geography: metadata.geography || "Unknown",
-            inputType: "name",
-            inputValue: oEmbedTitle,
-            metadata,
-          })
-          .returning();
-        return res.status(201).json(serialize(row));
+      } else {
+        return res.status(502).json({ error: "That video is unavailable. Try a different link or type the song name." });
       }
+    } else {
+      return res.status(502).json({
+        error:
+          inputType === "youtube"
+            ? "Could not access this video. Check the link and try again."
+            : "Could not find a matching recording for that name. Try a YouTube link or a more specific name.",
+      });
     }
-    return res.status(502).json({
-      error:
-        inputType === "youtube"
-          ? "Could not access this video. Check the YouTube link and try again."
-          : "Could not find a matching recording for that name. Try a YouTube link or a more specific name.",
-    });
   }
 
   const [row] = await db
     .insert(songsTable)
     .values({
-      title: metadata.title || (inputType === "name" ? input : "Untitled"),
+      title: metadata.title || (savedInputType === "name" ? savedInputValue : "Untitled"),
       singer: metadata.singer || "Unknown",
       era: metadata.era || "Unknown",
       geography: metadata.geography || "Unknown",
-      inputType,
-      inputValue: input,
+      inputType: savedInputType,
+      inputValue: savedInputValue,
       metadata,
     })
     .returning();

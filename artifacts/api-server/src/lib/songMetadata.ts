@@ -94,6 +94,24 @@ Strict rules:
 - history: several substantive sentences on cultural and historical background.
 - Always return every required field.`;
 
+const KNOWLEDGE_SYSTEM_PROMPT = `You are an expert ethnomusicologist, musicologist, and linguist building a richly detailed knowledge base of songs to be used as RAG context for AI music generation systems.
+
+No audio is available for this song. You will produce the full dossier from your training knowledge.
+
+Your job:
+1. Provide the complete lyrics as accurately as you know them from your training data, in the original language and script.
+2. Build a plausible interval-by-interval track breakdown based on the typical structure of this specific recording — use the format "M:SS" for timestamps, and base them on the known or typical duration of the song.
+3. Provide deep cultural and musicological analysis: history, subject, dialect, pronunciation guidance for a non-native performer, instruments, voices, related subjects, related works.
+
+Rules:
+- Timestamps are APPROXIMATE based on typical song length and structure; mark them as such in the "notes" field of each segment if they are not verified.
+- Lyrics should be as accurate as your training data allows; preserve the original language and script.
+- Instruments and voices should reflect what is known about the canonical recording.
+- All arrays (instruments, voices, relatedSubjects, relatedWorks) should have multiple meaningful entries.
+- pronunciationNotes: concrete phonetic guidance grounded in the actual lyrics.
+- history: several substantive sentences on cultural and historical background.
+- Always return every required field.`;
+
 function buildUserPrompt(
   input: string,
   inputType: "youtube" | "name",
@@ -170,6 +188,38 @@ async function callGeminiWithRetry(fn: () => Promise<string>): Promise<string> {
     }
   }
   throw lastErr;
+}
+
+/**
+ * Generate a full musicological dossier from Gemini's training knowledge only.
+ * Used as a fallback when yt-dlp cannot reach YouTube (bot-check on cloud IPs).
+ * Timestamps and lyrics are approximate — not from verified audio.
+ */
+export async function generateFromKnowledgeOnly(
+  songTitle: string,
+): Promise<SongMetadata> {
+  const userPrompt = `Produce the full musicological dossier for the song: "${songTitle}".
+
+No audio file is provided. Use your training knowledge to supply accurate lyrics (in the original language), plausible timestamps based on the song's known duration and structure, instrumentation, cultural history, dialect, pronunciation notes, and related works.`;
+
+  const content = await callGeminiWithRetry(async () => {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: [{ role: "user", parts: [{ text: userPrompt }] }],
+      config: {
+        systemInstruction: KNOWLEDGE_SYSTEM_PROMPT,
+        responseMimeType: "application/json",
+        responseSchema: buildResponseSchema(),
+        maxOutputTokens: 8192,
+      },
+    });
+    const text = response.text;
+    if (!text) throw new Error("Empty response from Gemini");
+    return text;
+  });
+
+  logger.info({ songTitle }, "Gemini knowledge-only dossier generated");
+  return SongMetadataSchema.parse(JSON.parse(content)) as SongMetadata;
 }
 
 /**
