@@ -12,6 +12,8 @@ tags:
     description: Health operations
   - name: songs
     description: Song metadata operations
+  - name: admin
+    description: Admin configuration
 paths:
   /healthz:
     get:
@@ -84,6 +86,35 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SongStats"
+  /admin/settings:
+    get:
+      operationId: getAdminSettings
+      tags: [admin]
+      summary: Get current AI provider settings
+      responses:
+        "200":
+          description: Current settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSettings"
+    put:
+      operationId: updateAdminSettings
+      tags: [admin]
+      summary: Update AI provider settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminSettings"
+      responses:
+        "200":
+          description: Updated settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSettings"
   /songs/export:
     get:
       operationId: exportAllSongs
@@ -386,3 +417,14 @@ components:
         - generatedAt
         - count
         - songs
+    AdminSettings:
+      type: object
+      properties:
+        activeProvider:
+          type: string
+          enum: [gemini, claude, deepseek, siliconflow]
+        activeModel:
+          type: string
+      required:
+        - activeProvider
+        - activeModel

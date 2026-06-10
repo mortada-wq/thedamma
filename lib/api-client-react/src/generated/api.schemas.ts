@@ -119,3 +119,18 @@ export interface RagExport {
   songs: Song[];
 }
 
+export type AdminSettingsActiveProvider = typeof AdminSettingsActiveProvider[keyof typeof AdminSettingsActiveProvider];
+
+
+export const AdminSettingsActiveProvider = {
+  gemini: 'gemini',
+  claude: 'claude',
+  deepseek: 'deepseek',
+  siliconflow: 'siliconflow',
+} as const;
+
+export interface AdminSettings {
+  activeProvider: AdminSettingsActiveProvider;
+  activeModel: string;
+}
+

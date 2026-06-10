@@ -91,6 +91,29 @@ export const GetSongStatsResponse = zod.object({
 
 
 /**
+ * @summary Get current AI provider settings
+ */
+export const GetAdminSettingsResponse = zod.object({
+  "activeProvider": zod.enum(['gemini', 'claude', 'deepseek', 'siliconflow']),
+  "activeModel": zod.string()
+})
+
+
+/**
+ * @summary Update AI provider settings
+ */
+export const UpdateAdminSettingsBody = zod.object({
+  "activeProvider": zod.enum(['gemini', 'claude', 'deepseek', 'siliconflow']),
+  "activeModel": zod.string()
+})
+
+export const UpdateAdminSettingsResponse = zod.object({
+  "activeProvider": zod.enum(['gemini', 'claude', 'deepseek', 'siliconflow']),
+  "activeModel": zod.string()
+})
+
+
+/**
  * Returns a single combined JSON document containing every song's metadata
  * @summary Export the entire library as one RAG file
  */

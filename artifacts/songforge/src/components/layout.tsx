@@ -3,7 +3,7 @@ import { Link } from "wouter";
 import { useExportAllSongs, getExportAllSongsQueryKey } from "@workspace/api-client-react";
 import { downloadJson } from "@/lib/export";
 import { Button } from "@/components/ui/button";
-import { Download, LayoutGrid } from "lucide-react";
+import { Download, LayoutGrid, Settings2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export function Layout({ children }: { children: ReactNode }) {
@@ -69,6 +69,16 @@ export function Layout({ children }: { children: ReactNode }) {
               >
                 <LayoutGrid className="w-4 h-4" />
                 RAG Grid
+              </Button>
+            </Link>
+            <Link href="/admin">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2 font-medium rounded-full bg-transparent border-border text-muted-foreground hover:text-foreground hover:bg-secondary active:scale-[0.98] transition-transform"
+              >
+                <Settings2 className="w-4 h-4" />
+                Admin
               </Button>
             </Link>
             <Button

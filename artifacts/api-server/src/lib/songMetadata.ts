@@ -1,6 +1,7 @@
 import { readFile, rm } from "node:fs/promises";
 import { ai } from "@workspace/integrations-gemini-ai";
 import { isRateLimitError } from "@workspace/integrations-gemini-ai/batch";
+import { anthropic } from "@workspace/integrations-anthropic-ai";
 import { GetSongResponse } from "@workspace/api-zod";
 import type { SongMetadata } from "@workspace/db";
 import {
@@ -22,6 +23,9 @@ export function classifyInput(input: string): "youtube" | "name" {
   return YOUTUBE_RE.test(input) ? "youtube" : "name";
 }
 
+// ---------------------------------------------------------------------------
+// JSON schema for Gemini structured output
+// ---------------------------------------------------------------------------
 function buildResponseSchema() {
   const stringArray = {
     type: "array" as const,
@@ -58,25 +62,16 @@ function buildResponseSchema() {
       track: { type: "array" as const, items: trackSegment },
     },
     required: [
-      "title",
-      "singer",
-      "composer",
-      "era",
-      "geography",
-      "history",
-      "subject",
-      "relatedSubjects",
-      "dialect",
-      "instruments",
-      "voices",
-      "relatedWorks",
-      "transcription",
-      "pronunciationNotes",
-      "track",
+      "title", "singer", "composer", "era", "geography", "history",
+      "subject", "relatedSubjects", "dialect", "instruments", "voices",
+      "relatedWorks", "transcription", "pronunciationNotes", "track",
     ],
   };
 }
 
+// ---------------------------------------------------------------------------
+// Prompts
+// ---------------------------------------------------------------------------
 const SYSTEM_PROMPT = `You are an expert ethnomusicologist, musicologist, and linguist building a richly detailed knowledge base of songs to be used as RAG context for AI music generation systems.
 
 You will receive the actual audio of the song plus verified metadata (title, channel, duration, upload date, description, tags).
@@ -112,6 +107,26 @@ Rules:
 - pronunciationNotes: concrete phonetic guidance grounded in the actual lyrics.
 - history: several substantive sentences on cultural and historical background.
 - Always return every required field.`;
+
+const JSON_FIELDS_SPEC = `Return ONLY a valid JSON object with exactly these fields:
+{
+  "title": string,
+  "singer": string,
+  "composer": string,
+  "era": string,
+  "geography": string,
+  "history": string (several sentences),
+  "subject": string,
+  "relatedSubjects": string[],
+  "dialect": string,
+  "instruments": string[],
+  "voices": string[],
+  "relatedWorks": string[],
+  "transcription": string (full lyrics in original language),
+  "pronunciationNotes": string,
+  "track": [{ "timestamp": "M:SS", "label": string, "instruments": string[], "vocals": string, "notes": string }]
+}
+No markdown, no code fences, no explanation — only the raw JSON object.`;
 
 function buildUserPrompt(
   input: string,
@@ -172,6 +187,10 @@ function buildUserPrompt(
   return lines.join("\n");
 }
 
+// ---------------------------------------------------------------------------
+// Provider helpers
+// ---------------------------------------------------------------------------
+
 async function callGeminiWithRetry(fn: () => Promise<string>): Promise<string> {
   const delays = [3000, 10000, 25000];
   let lastErr: unknown;
@@ -191,9 +210,128 @@ async function callGeminiWithRetry(fn: () => Promise<string>): Promise<string> {
   throw lastErr;
 }
 
+async function callClaude(model: string, systemPrompt: string, userPrompt: string): Promise<string> {
+  const message = await anthropic.messages.create({
+    model,
+    max_tokens: 8192,
+    system: systemPrompt + "\n\n" + JSON_FIELDS_SPEC,
+    messages: [{ role: "user", content: userPrompt }],
+  });
+  const block = message.content[0];
+  if (!block || block.type !== "text") throw new Error("Empty response from Claude");
+  return block.text.trim();
+}
+
+async function callOpenAICompatible(
+  baseUrl: string,
+  apiKey: string,
+  model: string,
+  systemPrompt: string,
+  userPrompt: string,
+): Promise<string> {
+  const response = await fetch(`${baseUrl}/chat/completions`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: "system", content: systemPrompt + "\n\n" + JSON_FIELDS_SPEC },
+        { role: "user", content: userPrompt },
+      ],
+      max_tokens: 8192,
+      response_format: { type: "json_object" },
+    }),
+  });
+  if (!response.ok) {
+    const text = await response.text().catch(() => response.statusText);
+    throw new Error(`Provider error ${response.status}: ${text}`);
+  }
+  const data = (await response.json()) as { choices: Array<{ message: { content: string } }> };
+  const content = data.choices?.[0]?.message?.content;
+  if (!content) throw new Error("Empty response from provider");
+  return content.trim();
+}
+
+function parseJsonResponse(raw: string): SongMetadata {
+  const stripped = raw
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```\s*$/, "")
+    .trim();
+  return SongMetadataSchema.parse(JSON.parse(stripped)) as SongMetadata;
+}
+
+// ---------------------------------------------------------------------------
+// Knowledge-only generation (text models: all providers)
+// ---------------------------------------------------------------------------
+
+export async function generateFromKnowledgeOnly(
+  songTitle: string,
+  provider = "gemini",
+  model = "gemini-2.0-flash",
+): Promise<SongMetadata> {
+  const userPrompt = `Produce the full musicological dossier for the song: "${songTitle}".
+
+No audio file is provided. Use your training knowledge to supply accurate lyrics (in the original language), plausible timestamps based on the song's known duration and structure, instrumentation, cultural history, dialect, pronunciation notes, and related works.`;
+
+  let raw: string;
+
+  if (provider === "gemini") {
+    raw = await callGeminiWithRetry(async () => {
+      const response = await ai.models.generateContent({
+        model,
+        contents: [{ role: "user", parts: [{ text: userPrompt }] }],
+        config: {
+          systemInstruction: KNOWLEDGE_SYSTEM_PROMPT,
+          responseMimeType: "application/json",
+          responseSchema: buildResponseSchema(),
+          maxOutputTokens: 8192,
+        },
+      });
+      const text = response.text;
+      if (!text) throw new Error("Empty response from Gemini");
+      return text;
+    });
+  } else if (provider === "claude") {
+    raw = await callClaude(model, KNOWLEDGE_SYSTEM_PROMPT, userPrompt);
+  } else if (provider === "deepseek") {
+    const apiKey = process.env.DEEPSEEK_API_KEY;
+    if (!apiKey) throw new Error("DEEPSEEK_API_KEY is not set — configure it in the environment secrets.");
+    raw = await callOpenAICompatible(
+      "https://api.deepseek.com/v1",
+      apiKey,
+      model,
+      KNOWLEDGE_SYSTEM_PROMPT,
+      userPrompt,
+    );
+  } else if (provider === "siliconflow") {
+    const apiKey = process.env.SILICON_FLOW_API_KEY;
+    if (!apiKey) throw new Error("SILICON_FLOW_API_KEY is not set — configure it in the environment secrets.");
+    raw = await callOpenAICompatible(
+      "https://api.siliconflow.cn/v1",
+      apiKey,
+      model,
+      KNOWLEDGE_SYSTEM_PROMPT,
+      userPrompt,
+    );
+  } else {
+    throw new Error(`Unknown provider: ${provider}`);
+  }
+
+  logger.info({ songTitle, provider, model }, "Knowledge-only dossier generated");
+  return parseJsonResponse(raw);
+}
+
+// ---------------------------------------------------------------------------
+// Audio-based generation (Gemini only — requires multimodal support)
+// ---------------------------------------------------------------------------
+
 /**
  * Generate a full musicological dossier from an uploaded audio/video file.
  * Converts the file to mp3 via ffmpeg, then sends it inline to Gemini.
+ * Note: audio analysis requires Gemini regardless of the active provider setting.
  */
 export async function generateFromUploadedAudio(
   filePath: string,
@@ -241,46 +379,22 @@ Listen to the audio and provide: exact lyrics transcription in the original lang
 }
 
 /**
- * Generate a full musicological dossier from Gemini's training knowledge only.
- * Used as a fallback when yt-dlp cannot reach YouTube (bot-check on cloud IPs).
- * Timestamps and lyrics are approximate — not from verified audio.
- */
-export async function generateFromKnowledgeOnly(
-  songTitle: string,
-): Promise<SongMetadata> {
-  const userPrompt = `Produce the full musicological dossier for the song: "${songTitle}".
-
-No audio file is provided. Use your training knowledge to supply accurate lyrics (in the original language), plausible timestamps based on the song's known duration and structure, instrumentation, cultural history, dialect, pronunciation notes, and related works.`;
-
-  const content = await callGeminiWithRetry(async () => {
-    const response = await ai.models.generateContent({
-      model: "gemini-1.5-pro",
-      contents: [{ role: "user", parts: [{ text: userPrompt }] }],
-      config: {
-        systemInstruction: KNOWLEDGE_SYSTEM_PROMPT,
-        responseMimeType: "application/json",
-        responseSchema: buildResponseSchema(),
-        maxOutputTokens: 8192,
-      },
-    });
-    const text = response.text;
-    if (!text) throw new Error("Empty response from Gemini");
-    return text;
-  });
-
-  logger.info({ songTitle }, "Gemini knowledge-only dossier generated");
-  return SongMetadataSchema.parse(JSON.parse(content)) as SongMetadata;
-}
-
-/**
- * Generate a full musicological dossier for a song.
- * Downloads the audio via yt-dlp, passes it inline to Gemini gemini-1.5-pro,
- * and validates the structured response against the SongMetadata Zod schema.
+ * Generate a full musicological dossier for a YouTube link or song name.
+ * Downloads audio via yt-dlp; passes to Gemini for audio analysis.
+ * If a non-Gemini provider is active and the input is a song name, routes
+ * to knowledge-only generation with that provider.
  */
 export async function generateSongMetadata(
   input: string,
   inputType: "youtube" | "name",
+  provider = "gemini",
+  model = "gemini-2.0-flash",
 ): Promise<SongMetadata> {
+  // Non-Gemini providers cannot process audio — use knowledge-only path
+  if (provider !== "gemini" && inputType === "name") {
+    return generateFromKnowledgeOnly(input, provider, model);
+  }
+
   const downloaded = await fetchAndDownloadAudio(input, inputType);
 
   try {
@@ -301,12 +415,7 @@ export async function generateSongMetadata(
           {
             role: "user",
             parts: [
-              {
-                inlineData: {
-                  mimeType: "audio/mpeg",
-                  data: base64Audio,
-                },
-              },
+              { inlineData: { mimeType: "audio/mpeg", data: base64Audio } },
               { text: userPrompt },
             ],
           },

@@ -5,6 +5,7 @@ import multer from "multer";
 import { db, songsTable, type Song as DbSong } from "@workspace/db";
 import { GenerateSongBody, GetSongParams, DeleteSongParams } from "@workspace/api-zod";
 import { classifyInput, generateSongMetadata, generateFromKnowledgeOnly, generateFromUploadedAudio, isAllowedYouTubeUrl, isBotCheckError } from "../lib/songMetadata";
+import { getSettings } from "./admin";
 import { isVideoUnavailableError, fetchYouTubeOEmbedTitle } from "../lib/audioExtraction";
 
 const upload = multer({
@@ -111,17 +112,20 @@ router.post("/songs", async (req, res) => {
     });
   }
 
+  const { activeProvider, activeModel } = await getSettings();
+  req.log.info({ activeProvider, activeModel }, "Using AI provider");
+
   let metadata;
   let savedInputType = inputType;
   let savedInputValue = input;
 
   try {
-    metadata = await generateSongMetadata(input, inputType);
+    metadata = await generateSongMetadata(input, inputType, activeProvider, activeModel);
   } catch (err) {
     req.log.error({ err }, "Primary generation failed");
 
     if (isBotCheckError(err)) {
-      // YouTube is blocking yt-dlp on this IP. Fall back to Gemini knowledge-only.
+      // YouTube is blocking yt-dlp on this IP. Fall back to knowledge-only.
       // For a URL we first resolve the video title via oEmbed (no auth needed).
       let fallbackTitle: string | null = inputType === "name" ? input : null;
       if (inputType === "youtube") {
@@ -135,8 +139,8 @@ router.post("/songs", async (req, res) => {
         });
       }
       try {
-        req.log.info({ fallbackTitle }, "Falling back to knowledge-only generation");
-        metadata = await generateFromKnowledgeOnly(fallbackTitle);
+        req.log.info({ fallbackTitle, activeProvider, activeModel }, "Falling back to knowledge-only generation");
+        metadata = await generateFromKnowledgeOnly(fallbackTitle, activeProvider, activeModel);
         savedInputType = "name";
         savedInputValue = fallbackTitle;
       } catch (fallbackErr) {
@@ -151,7 +155,7 @@ router.post("/songs", async (req, res) => {
       if (oEmbedTitle) {
         req.log.info({ oEmbedTitle }, "oEmbed title retrieved; retrying as name-based search");
         try {
-          metadata = await generateSongMetadata(oEmbedTitle, "name");
+          metadata = await generateSongMetadata(oEmbedTitle, "name", activeProvider, activeModel);
           savedInputType = "name";
           savedInputValue = oEmbedTitle;
         } catch (fallbackErr) {

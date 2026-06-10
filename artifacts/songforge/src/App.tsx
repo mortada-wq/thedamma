@@ -7,6 +7,7 @@ import { Layout } from "@/components/layout";
 import { Home } from "@/pages/home";
 import { SongDetail } from "@/pages/song-detail";
 import { RagGrid } from "@/pages/rag-grid";
+import { Admin } from "@/pages/admin";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -24,6 +25,7 @@ function Router() {
         <Route path="/" component={Home} />
         <Route path="/song/:id" component={SongDetail} />
         <Route path="/rag-grid" component={RagGrid} />
+        <Route path="/admin" component={Admin} />
         <Route component={NotFound} />
       </Switch>
     </Layout>
