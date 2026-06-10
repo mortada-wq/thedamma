@@ -1,1 +1,1 @@
-- [Grounded audio extraction pipeline](audio-extraction-pipeline.md) — managed proxy blocks whisper-1 (no native timestamps); ground via captions/json3 or ffmpeg-sliced gpt-4o-transcribe; yt-dlp at .pythonlibs/bin; host-allowlist URLs (SSRF).
+- [Song dossier pipeline (Gemini native audio)](audio-extraction-pipeline.md) — yt-dlp downloads audio → gemini-2.5-flash hears it inline → full dossier JSON; @google/genai must NOT be in esbuild external list.

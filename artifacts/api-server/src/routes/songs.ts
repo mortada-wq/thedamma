@@ -2,8 +2,7 @@ import { Router, type IRouter } from "express";
 import { desc, eq } from "drizzle-orm";
 import { db, songsTable, type Song as DbSong } from "@workspace/db";
 import { GenerateSongBody, GetSongParams, DeleteSongParams } from "@workspace/api-zod";
-import { classifyInput, generateSongMetadata } from "../lib/songMetadata";
-import { extractRealSongData, isAllowedYouTubeUrl, isBotCheckError } from "../lib/audioExtraction";
+import { classifyInput, generateSongMetadata, isAllowedYouTubeUrl, isBotCheckError } from "../lib/songMetadata";
 
 const router: IRouter = Router();
 
@@ -74,11 +73,11 @@ router.post("/songs", async (req, res) => {
     });
   }
 
-  let realData;
+  let metadata;
   try {
-    realData = await extractRealSongData(input, inputType);
+    metadata = await generateSongMetadata(input, inputType);
   } catch (err) {
-    req.log.error({ err }, "Real song data extraction failed");
+    req.log.error({ err }, "Song metadata generation failed");
     if (isBotCheckError(err)) {
       return res.status(503).json({
         error:
@@ -91,14 +90,6 @@ router.post("/songs", async (req, res) => {
           ? "Could not access this video. Check the YouTube link and try again."
           : "Could not find a matching recording for that name. Try a YouTube link or a more specific name.",
     });
-  }
-
-  let metadata;
-  try {
-    metadata = await generateSongMetadata(input, inputType, realData);
-  } catch (err) {
-    req.log.error({ err }, "Song metadata generation failed");
-    return res.status(502).json({ error: "Could not generate metadata for this song. Please try again." });
   }
 
   const [row] = await db

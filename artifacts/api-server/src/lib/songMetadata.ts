@@ -1,7 +1,16 @@
-import { openai } from "@workspace/integrations-openai-ai-server";
+import { readFile, rm } from "node:fs/promises";
+import { ai } from "@workspace/integrations-gemini-ai";
+import { isRateLimitError } from "@workspace/integrations-gemini-ai/batch";
 import { GetSongResponse } from "@workspace/api-zod";
 import type { SongMetadata } from "@workspace/db";
-import { buildRealDataContext, type ExtractedSongData } from "./audioExtraction";
+import {
+  fetchAndDownloadAudio,
+  isAllowedYouTubeUrl,
+  isBotCheckError,
+} from "./audioExtraction";
+import { logger } from "./logger";
+
+export { isBotCheckError, isAllowedYouTubeUrl };
 
 const SongMetadataSchema = GetSongResponse.shape.metadata;
 
@@ -12,59 +21,40 @@ export function classifyInput(input: string): "youtube" | "name" {
   return YOUTUBE_RE.test(input) ? "youtube" : "name";
 }
 
-const SYSTEM_PROMPT = `You are an expert ethnomusicologist, musicologist, and linguist. You build a richly detailed knowledge base of songs to be used as RAG context for AI music generation systems — helping them produce accurate lyrics, melodies, dialects, and pronunciation.
-
-You are given VERIFIED REAL DATA extracted from the actual recording before this call: source metadata from yt-dlp and a real, timestamped transcription (from captions or from transcribing the audio itself). This real data is GROUND TRUTH.
-
-Strict rules:
-- Treat the provided metadata (title, uploader/channel, duration, upload date) and the real timestamped transcription as factual. Do NOT contradict, override, or replace them with guesses.
-- The "transcription" field MUST be the real lyrics from the provided transcription (preserve the original language and line structure). Do not substitute lyrics from memory when a real transcription is provided.
-- The "track" breakdown MUST be built from the REAL timestamps and lyric segments provided. Group the real segments into musical sections (intro, verses, choruses, bridges, instrumental passages, outro). Each segment's "timestamp" must come from the real data; cover the song through to its real duration. Never invent timings that are not grounded in the provided data.
-- Do NOT fabricate factual audio measurements. No stem separation was performed, so "instruments" and "voices" are your INFORMED INFERENCE from genre, era, tradition, and what is audible in the transcription context — keep them plausible, and do not present them as precise measurements.
-- Your real job is INTERPRETATION and CULTURAL/MUSICOLOGICAL ANALYSIS: history, subject, dialect, pronunciation guidance, related subjects/works, and the interpretive musical notes per section.
-
-Be specific and substantive:
-- "history": several sentences on the cultural and historical background.
-- "pronunciationNotes": concrete phonetic guidance for a non-native performer — how to pronounce tricky words/phonemes in the song's dialect, grounded in the real lyrics.
-- "notes" within each track segment: key, tempo, mode, melodic motion, dynamics (interpretive).
-- Arrays (relatedSubjects, instruments, voices, relatedWorks) should each contain multiple meaningful entries.
-- Always return every field. If the transcription was unavailable, follow the instruction in the provided context and clearly avoid inventing exact timings.`;
-
-function buildSchema() {
+function buildResponseSchema() {
+  const stringArray = {
+    type: "array" as const,
+    items: { type: "string" as const },
+  };
   const trackSegment = {
-    type: "object",
-    additionalProperties: false,
+    type: "object" as const,
     properties: {
-      timestamp: { type: "string" },
-      label: { type: "string" },
-      instruments: { type: "array", items: { type: "string" } },
-      vocals: { type: "string" },
-      notes: { type: "string" },
+      timestamp: { type: "string" as const },
+      label: { type: "string" as const },
+      instruments: stringArray,
+      vocals: { type: "string" as const },
+      notes: { type: "string" as const },
     },
     required: ["timestamp", "label", "instruments", "vocals", "notes"],
   };
-
-  const stringArray = { type: "array", items: { type: "string" } };
-
   return {
-    type: "object",
-    additionalProperties: false,
+    type: "object" as const,
     properties: {
-      title: { type: "string" },
-      singer: { type: "string" },
-      composer: { type: "string" },
-      era: { type: "string" },
-      geography: { type: "string" },
-      history: { type: "string" },
-      subject: { type: "string" },
+      title: { type: "string" as const },
+      singer: { type: "string" as const },
+      composer: { type: "string" as const },
+      era: { type: "string" as const },
+      geography: { type: "string" as const },
+      history: { type: "string" as const },
+      subject: { type: "string" as const },
       relatedSubjects: stringArray,
-      dialect: { type: "string" },
+      dialect: { type: "string" as const },
       instruments: stringArray,
       voices: stringArray,
       relatedWorks: stringArray,
-      transcription: { type: "string" },
-      pronunciationNotes: { type: "string" },
-      track: { type: "array", items: trackSegment },
+      transcription: { type: "string" as const },
+      pronunciationNotes: { type: "string" as const },
+      track: { type: "array" as const, items: trackSegment },
     },
     required: [
       "title",
@@ -86,43 +76,160 @@ function buildSchema() {
   };
 }
 
-export async function generateSongMetadata(
+const SYSTEM_PROMPT = `You are an expert ethnomusicologist, musicologist, and linguist building a richly detailed knowledge base of songs to be used as RAG context for AI music generation systems.
+
+You will receive the actual audio of the song plus verified metadata (title, channel, duration, upload date, description, tags).
+
+Your job:
+1. LISTEN to the audio and transcribe the lyrics exactly as sung, preserving the original language and script.
+2. Build an interval-by-interval track breakdown from what you actually hear — real timestamps, section labels (Intro, Verse 1, Chorus, Bridge, Outro, Instrumental, etc.), instruments audible in each section, vocal description, and musical notes (key, tempo/BPM estimate, mode, melodic motion, dynamics).
+3. Provide deep cultural and musicological analysis: history, subject, dialect, pronunciation guidance for a non-native performer, related subjects, related works.
+
+Strict rules:
+- Transcription MUST reflect the actual lyrics you hear from the audio — do not substitute from memory or a different version.
+- Track timestamps MUST be grounded in what you hear, not invented. Use the format "M:SS" (e.g. "0:00", "1:24").
+- Instruments MUST be what you actually hear in the audio — not genre assumptions.
+- All arrays (instruments, voices, relatedSubjects, relatedWorks) should contain multiple meaningful entries.
+- pronunciationNotes: concrete phonetic guidance for tricky words/phonemes in the song's dialect, grounded in the real lyrics.
+- history: several substantive sentences on cultural and historical background.
+- Always return every required field.`;
+
+function buildUserPrompt(
   input: string,
   inputType: "youtube" | "name",
-  realData: ExtractedSongData,
-): Promise<SongMetadata> {
+  source: {
+    title: string | null;
+    uploader: string | null;
+    channel: string | null;
+    durationSec: number | null;
+    uploadDate: string | null;
+    description: string | null;
+    tags: string[];
+    categories: string[];
+    viewCount: number | null;
+    webpageUrl: string | null;
+    resolvedFrom: string;
+  },
+  truncated: boolean,
+): string {
   const identity =
     inputType === "youtube"
       ? `the song at this YouTube link: ${input}`
       : `the song the user named: "${input}"`;
 
-  const userPrompt = `Produce the full musicological dossier for ${identity}.
-
-Use the verified real data below as ground truth. Build the transcription and the interval-by-interval track breakdown from the real timestamped lyrics. Apply your expertise only for interpretation and cultural/musicological analysis.
-
-${buildRealDataContext(realData)}`;
-
-  const response = await openai.chat.completions.create({
-    model: "gpt-5.4",
-    max_completion_tokens: 8192,
-    messages: [
-      { role: "system", content: SYSTEM_PROMPT },
-      { role: "user", content: userPrompt },
-    ],
-    response_format: {
-      type: "json_schema",
-      json_schema: {
-        name: "song_metadata",
-        strict: true,
-        schema: buildSchema(),
-      },
-    },
-  });
-
-  const content = response.choices[0]?.message?.content;
-  if (!content) {
-    throw new Error("Empty response from model");
+  const lines: string[] = [
+    `Produce the full musicological dossier for ${identity}.`,
+    "",
+    "=== VERIFIED SOURCE METADATA (from yt-dlp, treat as ground truth) ===",
+  ];
+  if (source.title) lines.push(`Video title: ${source.title}`);
+  if (source.uploader) lines.push(`Uploader/channel: ${source.uploader}`);
+  if (source.channel && source.channel !== source.uploader)
+    lines.push(`Channel: ${source.channel}`);
+  if (source.durationSec != null) {
+    const m = Math.floor(source.durationSec / 60);
+    const s = Math.floor(source.durationSec % 60);
+    lines.push(`Duration: ${m}:${String(s).padStart(2, "0")} (${source.durationSec}s)`);
   }
+  if (source.uploadDate) lines.push(`Upload date: ${source.uploadDate}`);
+  if (source.viewCount != null) lines.push(`View count: ${source.viewCount}`);
+  if (source.categories.length)
+    lines.push(`Categories: ${source.categories.join(", ")}`);
+  if (source.tags.length) lines.push(`Tags: ${source.tags.join(", ")}`);
+  if (source.webpageUrl) lines.push(`URL: ${source.webpageUrl}`);
+  if (source.resolvedFrom === "youtube-search")
+    lines.push(
+      "NOTE: Resolved from a text search — may be a specific recording, cover, or live version.",
+    );
+  if (source.description) {
+    lines.push("Description (verbatim):");
+    lines.push(source.description);
+  }
+  if (truncated)
+    lines.push(
+      "\nNOTE: The audio was re-encoded at very low bitrate to fit inline limits; the full song is present.",
+    );
+  lines.push("\nListen to the audio above and produce the complete musicological dossier.");
+  return lines.join("\n");
+}
 
-  return SongMetadataSchema.parse(JSON.parse(content)) as SongMetadata;
+async function callGeminiWithRetry(fn: () => Promise<string>): Promise<string> {
+  const delays = [3000, 10000, 25000];
+  let lastErr: unknown;
+  for (let i = 0; i <= delays.length; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      if (i < delays.length && isRateLimitError(err)) {
+        logger.warn({ attempt: i + 1 }, "Gemini rate limit — backing off");
+        await new Promise((r) => setTimeout(r, delays[i]));
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw lastErr;
+}
+
+/**
+ * Generate a full musicological dossier for a song.
+ * Downloads the audio via yt-dlp, passes it inline to Gemini gemini-2.5-flash,
+ * and validates the structured response against the SongMetadata Zod schema.
+ */
+export async function generateSongMetadata(
+  input: string,
+  inputType: "youtube" | "name",
+): Promise<SongMetadata> {
+  const downloaded = await fetchAndDownloadAudio(input, inputType);
+
+  try {
+    const audioBytes = await readFile(downloaded.audioPath);
+    const base64Audio = audioBytes.toString("base64");
+
+    const userPrompt = buildUserPrompt(
+      input,
+      inputType,
+      downloaded.source,
+      downloaded.truncated,
+    );
+
+    const content = await callGeminiWithRetry(async () => {
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: [
+          {
+            role: "user",
+            parts: [
+              {
+                inlineData: {
+                  mimeType: "audio/mpeg",
+                  data: base64Audio,
+                },
+              },
+              { text: userPrompt },
+            ],
+          },
+        ],
+        config: {
+          systemInstruction: SYSTEM_PROMPT,
+          responseMimeType: "application/json",
+          responseSchema: buildResponseSchema(),
+          maxOutputTokens: 8192,
+        },
+      });
+      const text = response.text;
+      if (!text) throw new Error("Empty response from Gemini");
+      return text;
+    });
+
+    logger.info(
+      { videoId: downloaded.source.videoId, truncated: downloaded.truncated },
+      "Gemini dossier generated",
+    );
+
+    return SongMetadataSchema.parse(JSON.parse(content)) as SongMetadata;
+  } finally {
+    await rm(downloaded.tempDir, { recursive: true, force: true }).catch(() => {});
+  }
 }
