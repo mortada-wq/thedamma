@@ -199,6 +199,40 @@ router.get("/songs/:id", async (req, res) => {
   return res.json(serialize(row));
 });
 
+router.patch("/songs/:id", async (req, res) => {
+  const parsed = GetSongParams.safeParse(req.params);
+  if (!parsed.success) return res.status(404).json({ error: "Song not found" });
+
+  const [current] = await db.select().from(songsTable).where(eq(songsTable.id, parsed.data.id));
+  if (!current) return res.status(404).json({ error: "Song not found" });
+
+  const body = req.body as {
+    title?: string;
+    singer?: string;
+    era?: string;
+    geography?: string;
+    metadata?: Partial<typeof current.metadata>;
+  };
+
+  const mergedMetadata = body.metadata
+    ? { ...current.metadata, ...body.metadata }
+    : current.metadata;
+
+  const [updated] = await db
+    .update(songsTable)
+    .set({
+      title: body.title ?? current.title,
+      singer: body.singer ?? current.singer,
+      era: body.era ?? current.era,
+      geography: body.geography ?? current.geography,
+      metadata: mergedMetadata,
+    })
+    .where(eq(songsTable.id, parsed.data.id))
+    .returning();
+
+  return res.json(serialize(updated));
+});
+
 router.delete("/songs/:id", async (req, res) => {
   const parsed = DeleteSongParams.safeParse(req.params);
   if (!parsed.success) {

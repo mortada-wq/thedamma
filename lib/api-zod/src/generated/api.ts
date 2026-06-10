@@ -176,6 +176,78 @@ export const GetSongResponse = zod.object({
 
 
 /**
+ * @summary Update a song's fields or metadata
+ */
+export const UpdateSongParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateSongBody = zod.object({
+  "title": zod.string().optional(),
+  "singer": zod.string().optional(),
+  "era": zod.string().optional(),
+  "geography": zod.string().optional(),
+  "metadata": zod.object({
+  "title": zod.string(),
+  "singer": zod.string().describe('Performing singer(s)'),
+  "composer": zod.string(),
+  "era": zod.string().describe('Time period \/ musical era'),
+  "geography": zod.string().describe('Region or country of origin'),
+  "history": zod.string().describe('Historical and cultural background'),
+  "subject": zod.string().describe('Main theme or subject of the song'),
+  "relatedSubjects": zod.array(zod.string()),
+  "dialect": zod.string().describe('Language and dialect of the lyrics'),
+  "instruments": zod.array(zod.string()).describe('All instruments used'),
+  "voices": zod.array(zod.string()).describe('All distinct voices \/ vocal parts'),
+  "relatedWorks": zod.array(zod.string()),
+  "transcription": zod.string().describe('Full lyric transcription'),
+  "pronunciationNotes": zod.string().describe('Detailed notes on how to pronounce the lyrics'),
+  "track": zod.array(zod.object({
+  "timestamp": zod.string().describe('Start time of this interval, e.g. \"0:00\" or \"1:24\"'),
+  "label": zod.string().describe('Section name, e.g. \"Intro\", \"Verse 1\", \"Chorus\", \"Instrumental break\"'),
+  "instruments": zod.array(zod.string()).describe('Instruments active during this interval'),
+  "vocals": zod.string().describe('Vocal description for this interval (which voices, harmony, solo, etc.)'),
+  "notes": zod.string().describe('Musical notes — key, tempo, mode, melodic motion, dynamics')
+}).describe('A single interval in the detailed track breakdown')).describe('Interval-by-interval breakdown of the music')
+}).optional().describe('Full structured musicological metadata for a song')
+}).describe('Partial update for a song — supply any combination of top-level fields and\/or full metadata')
+
+export const UpdateSongResponse = zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "singer": zod.string(),
+  "era": zod.string(),
+  "geography": zod.string(),
+  "inputType": zod.enum(['youtube', 'name', 'file']),
+  "inputValue": zod.string(),
+  "metadata": zod.object({
+  "title": zod.string(),
+  "singer": zod.string().describe('Performing singer(s)'),
+  "composer": zod.string(),
+  "era": zod.string().describe('Time period \/ musical era'),
+  "geography": zod.string().describe('Region or country of origin'),
+  "history": zod.string().describe('Historical and cultural background'),
+  "subject": zod.string().describe('Main theme or subject of the song'),
+  "relatedSubjects": zod.array(zod.string()),
+  "dialect": zod.string().describe('Language and dialect of the lyrics'),
+  "instruments": zod.array(zod.string()).describe('All instruments used'),
+  "voices": zod.array(zod.string()).describe('All distinct voices \/ vocal parts'),
+  "relatedWorks": zod.array(zod.string()),
+  "transcription": zod.string().describe('Full lyric transcription'),
+  "pronunciationNotes": zod.string().describe('Detailed notes on how to pronounce the lyrics'),
+  "track": zod.array(zod.object({
+  "timestamp": zod.string().describe('Start time of this interval, e.g. \"0:00\" or \"1:24\"'),
+  "label": zod.string().describe('Section name, e.g. \"Intro\", \"Verse 1\", \"Chorus\", \"Instrumental break\"'),
+  "instruments": zod.array(zod.string()).describe('Instruments active during this interval'),
+  "vocals": zod.string().describe('Vocal description for this interval (which voices, harmony, solo, etc.)'),
+  "notes": zod.string().describe('Musical notes — key, tempo, mode, melodic motion, dynamics')
+}).describe('A single interval in the detailed track breakdown')).describe('Interval-by-interval breakdown of the music')
+}).describe('Full structured musicological metadata for a song'),
+  "createdAt": zod.string()
+})
+
+
+/**
  * @summary Delete a song
  */
 export const DeleteSongParams = zod.object({

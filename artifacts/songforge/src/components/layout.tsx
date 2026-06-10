@@ -3,7 +3,7 @@ import { Link } from "wouter";
 import { useExportAllSongs, getExportAllSongsQueryKey } from "@workspace/api-client-react";
 import { downloadJson } from "@/lib/export";
 import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
+import { Download, LayoutGrid } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export function Layout({ children }: { children: ReactNode }) {
@@ -54,7 +54,17 @@ export function Layout({ children }: { children: ReactNode }) {
               ضمة
             </span>
           </Link>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            <Link href="/rag-grid">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2 font-medium rounded-full bg-transparent border-border text-muted-foreground hover:text-foreground hover:bg-secondary active:scale-[0.98] transition-transform"
+              >
+                <LayoutGrid className="w-4 h-4" />
+                RAG Grid
+              </Button>
+            </Link>
             <Button
               variant="outline"
               size="sm"

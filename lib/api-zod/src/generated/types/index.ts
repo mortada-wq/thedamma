@@ -14,5 +14,6 @@ export * from './songInput';
 export * from './songInputType';
 export * from './songMetadata';
 export * from './songStats';
+export * from './songUpdate';
 export * from './statCount';
 export * from './trackSegment';

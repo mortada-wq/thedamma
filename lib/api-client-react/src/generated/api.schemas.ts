@@ -90,6 +90,17 @@ export interface SongInput {
   input: string;
 }
 
+/**
+ * Partial update for a song — supply any combination of top-level fields and/or full metadata
+ */
+export interface SongUpdate {
+  title?: string;
+  singer?: string;
+  era?: string;
+  geography?: string;
+  metadata?: SongMetadata;
+}
+
 export interface StatCount {
   label: string;
   count: number;

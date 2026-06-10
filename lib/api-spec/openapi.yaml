@@ -117,6 +117,37 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+    patch:
+      operationId: updateSong
+      tags: [songs]
+      summary: Update a song's fields or metadata
+      parameters:
+        - $ref: "#/components/parameters/SongId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SongUpdate"
+      responses:
+        "200":
+          description: Updated song
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Song"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
     delete:
       operationId: deleteSong
       tags: [songs]
@@ -294,6 +325,20 @@ components:
           description: A YouTube link or the name of a song
       required:
         - input
+    SongUpdate:
+      type: object
+      description: Partial update for a song — supply any combination of top-level fields and/or full metadata
+      properties:
+        title:
+          type: string
+        singer:
+          type: string
+        era:
+          type: string
+        geography:
+          type: string
+        metadata:
+          $ref: "#/components/schemas/SongMetadata"
     StatCount:
       type: object
       properties:

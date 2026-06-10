@@ -6,6 +6,7 @@ import NotFound from "@/pages/not-found";
 import { Layout } from "@/components/layout";
 import { Home } from "@/pages/home";
 import { SongDetail } from "@/pages/song-detail";
+import { RagGrid } from "@/pages/rag-grid";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -22,6 +23,7 @@ function Router() {
       <Switch>
         <Route path="/" component={Home} />
         <Route path="/song/:id" component={SongDetail} />
+        <Route path="/rag-grid" component={RagGrid} />
         <Route component={NotFound} />
       </Switch>
     </Layout>

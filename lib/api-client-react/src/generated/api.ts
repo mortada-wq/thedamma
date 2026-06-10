@@ -25,7 +25,8 @@ import type {
   RagExport,
   Song,
   SongInput,
-  SongStats
+  SongStats,
+  SongUpdate
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -500,6 +501,78 @@ export function useGetSong<TData = Awaited<ReturnType<typeof getSong>>, TError =
 
 
 
+
+export const getUpdateSongUrl = (id: number,) => {
+
+
+
+
+  return `/api/songs/${id}`
+}
+
+/**
+ * @summary Update a song's fields or metadata
+ */
+export const updateSong = async (id: number,
+    songUpdate: SongUpdate, options?: RequestInit): Promise<Song> => {
+
+  return customFetch<Song>(getUpdateSongUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      songUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateSongMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSong>>, TError,{id: number;data: BodyType<SongUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateSong>>, TError,{id: number;data: BodyType<SongUpdate>}, TContext> => {
+
+const mutationKey = ['updateSong'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateSong>>, {id: number;data: BodyType<SongUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateSong(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateSongMutationResult = NonNullable<Awaited<ReturnType<typeof updateSong>>>
+    export type UpdateSongMutationBody = BodyType<SongUpdate>
+    export type UpdateSongMutationError = ErrorType<Error>
+
+    /**
+ * @summary Update a song's fields or metadata
+ */
+export const useUpdateSong = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSong>>, TError,{id: number;data: BodyType<SongUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateSong>>,
+        TError,
+        {id: number;data: BodyType<SongUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateSongMutationOptions(options));
+    }
 
 export const getDeleteSongUrl = (id: number,) => {
 
