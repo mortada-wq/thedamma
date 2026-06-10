@@ -3,7 +3,7 @@ import { Link } from "wouter";
 import { useExportAllSongs, getExportAllSongsQueryKey } from "@workspace/api-client-react";
 import { downloadJson } from "@/lib/export";
 import { Button } from "@/components/ui/button";
-import { Download, Music, Library } from "lucide-react";
+import { Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export function Layout({ children }: { children: ReactNode }) {
@@ -16,7 +16,7 @@ export function Layout({ children }: { children: ReactNode }) {
     try {
       const result = await refetch();
       if (result.data) {
-        downloadJson(result.data, "songforge-library.json");
+        downloadJson(result.data, "damma-library.json");
         toast({
           title: "Library exported",
           description: `Exported ${result.data.count} songs successfully.`,
@@ -36,12 +36,22 @@ export function Layout({ children }: { children: ReactNode }) {
       <div className="noise-overlay" />
       <header className="sticky top-0 z-40 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/70">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3 transition-opacity hover:opacity-80">
-            <div className="w-8 h-8 rounded-[10px] bg-primary flex items-center justify-center text-primary-foreground shadow-sm">
-              <Music className="w-5 h-5" />
-            </div>
-            <span className="text-xl font-bold tracking-tight text-foreground">
-              SongForge
+          <Link href="/" aria-label="ضمة" className="flex flex-col items-center justify-center gap-0.5 transition-opacity hover:opacity-80">
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 64 64"
+              className="w-9 h-9 text-primary"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={8}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M41 18 C 50 21 51 34 42 37 C 33 40 23 35 24 27 C 25 20 32 16 41 18" />
+              <path d="M34 37 C 32 47 25 52 16 53" />
+            </svg>
+            <span className="font-song text-foreground text-2xl leading-none">
+              ضمة
             </span>
           </Link>
           <div className="flex items-center gap-4">

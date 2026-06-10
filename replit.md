@@ -1,4 +1,4 @@
-# SongForge
+# ضمة (Damma)
 
 A musicological knowledge base: paste a YouTube link or type a song name, and AI generates a rich dossier (singer, composer, era, geography, history, subject, dialect, instruments, voices, related works, full lyric transcription, pronunciation notes, and an interval-by-interval track breakdown). Songs are saved to a growing library and exportable as RAG JSON to feed AI music generators.
 

@@ -82,7 +82,7 @@ export function SongDetail() {
   const m = song.metadata;
 
   const handleExport = () => {
-    downloadJson(song, `songforge-${song.id}-${song.title.toLowerCase().replace(/\\s+/g, '-')}.json`);
+    downloadJson(song, `damma-${song.id}-${song.title.toLowerCase().replace(/\\s+/g, '-')}.json`);
     toast({ title: "Dossier exported" });
   };
 
