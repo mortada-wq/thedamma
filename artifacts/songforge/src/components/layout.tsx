@@ -34,49 +34,16 @@ export function Layout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-[100dvh] flex flex-col relative">
       <div className="noise-overlay" />
-      <header className="sticky top-0 z-40 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/70">
-        <div className="container mx-auto px-4 h-24 flex items-center justify-between">
-          {/* nav buttons — left side */}
-          <div className="flex items-center gap-3">
-            <Link href="/rag-grid">
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-2 font-medium rounded-full bg-transparent border-border text-muted-foreground hover:text-foreground hover:bg-secondary active:scale-[0.98] transition-transform"
-              >
-                <LayoutGrid className="w-4 h-4" />
-                RAG Grid
-              </Button>
-            </Link>
-            <Link href="/admin">
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-2 font-medium rounded-full bg-transparent border-border text-muted-foreground hover:text-foreground hover:bg-secondary active:scale-[0.98] transition-transform"
-              >
-                <Settings2 className="w-4 h-4" />
-                Admin
-              </Button>
-            </Link>
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-2 font-medium rounded-full bg-transparent border-brand-blue/50 text-brand-blue hover:bg-brand-blue/10 hover:text-brand-blue active:scale-[0.98] transition-transform"
-              onClick={handleExportLibrary}
-              data-testid="button-export-library"
-            >
-              <Download className="w-4 h-4" />
-              Export RAG Library
-            </Button>
-          </div>
 
-          {/* logo — right side */}
-          <Link href="/" aria-label="مضمام صاحب" className="flex flex-col items-center gap-0.5 transition-opacity hover:opacity-80">
+      {/* ── Logo bar ── */}
+      <div className="sticky top-0 z-40 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/70">
+        <div className="container mx-auto px-4 h-28 flex items-center justify-center">
+          <Link href="/" aria-label="مضمام صاحب" className="flex flex-col items-center gap-1 transition-opacity hover:opacity-80">
             <svg
               aria-hidden="true"
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 68 69"
-              className="h-16 w-auto"
+              className="h-[76px] w-auto"
               fill="none"
             >
               <defs>
@@ -89,14 +56,53 @@ export function Layout({ children }: { children: ReactNode }) {
             </svg>
             <span
               style={{ fontFamily: "'Muna', 'IBM Plex Sans Arabic', 'Tajawal', sans-serif" }}
-              className="text-[20px] font-medium tracking-wide text-muted-foreground leading-none"
+              className="text-[22px] font-medium tracking-wide text-muted-foreground leading-none"
               dir="rtl"
             >
               مضمام صاحب
             </span>
           </Link>
         </div>
-      </header>
+
+        {/* ── Nav bar ── */}
+        <div className="border-t border-border/50">
+          <div className="container mx-auto px-4 h-11 flex items-center justify-center gap-3">
+            <Link href="/rag-grid">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-2 text-xs font-medium rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary active:scale-[0.98] transition-transform h-7 px-3"
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+                RAG Grid
+              </Button>
+            </Link>
+            <div className="w-px h-4 bg-border" />
+            <Link href="/admin">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-2 text-xs font-medium rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary active:scale-[0.98] transition-transform h-7 px-3"
+              >
+                <Settings2 className="w-3.5 h-3.5" />
+                Admin
+              </Button>
+            </Link>
+            <div className="w-px h-4 bg-border" />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-2 text-xs font-medium rounded-full text-brand-blue hover:bg-brand-blue/10 active:scale-[0.98] transition-transform h-7 px-3"
+              onClick={handleExportLibrary}
+              data-testid="button-export-library"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Export RAG Library
+            </Button>
+          </div>
+        </div>
+      </div>
+
       <main className="flex-1 container mx-auto px-4 py-8">
         {children}
       </main>
