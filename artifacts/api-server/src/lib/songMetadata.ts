@@ -5,6 +5,7 @@ import { GetSongResponse } from "@workspace/api-zod";
 import type { SongMetadata } from "@workspace/db";
 import {
   fetchAndDownloadAudio,
+  convertToMp3ForGemini,
   isAllowedYouTubeUrl,
   isBotCheckError,
 } from "./audioExtraction";
@@ -188,6 +189,55 @@ async function callGeminiWithRetry(fn: () => Promise<string>): Promise<string> {
     }
   }
   throw lastErr;
+}
+
+/**
+ * Generate a full musicological dossier from an uploaded audio/video file.
+ * Converts the file to mp3 via ffmpeg, then sends it inline to Gemini.
+ */
+export async function generateFromUploadedAudio(
+  filePath: string,
+  originalFilename: string,
+): Promise<SongMetadata> {
+  const converted = await convertToMp3ForGemini(filePath);
+  try {
+    const audioBytes = await readFile(converted.mp3Path);
+    const base64Audio = audioBytes.toString("base64");
+
+    const userPrompt = `Produce the full musicological dossier for the song in this audio file.
+Original filename: "${originalFilename}"
+
+Listen to the audio and provide: exact lyrics transcription in the original language, a real interval-by-interval track breakdown with timestamps from what you actually hear, instrumentation, cultural history, dialect, pronunciation notes, related works, and all other required fields.`;
+
+    const content = await callGeminiWithRetry(async () => {
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: [
+          {
+            role: "user",
+            parts: [
+              { inlineData: { mimeType: "audio/mpeg", data: base64Audio } },
+              { text: userPrompt },
+            ],
+          },
+        ],
+        config: {
+          systemInstruction: SYSTEM_PROMPT,
+          responseMimeType: "application/json",
+          responseSchema: buildResponseSchema(),
+          maxOutputTokens: 8192,
+        },
+      });
+      const text = response.text;
+      if (!text) throw new Error("Empty response from Gemini");
+      return text;
+    });
+
+    logger.info({ originalFilename }, "Gemini upload dossier generated");
+    return SongMetadataSchema.parse(JSON.parse(content)) as SongMetadata;
+  } finally {
+    await rm(converted.tempDir, { recursive: true, force: true }).catch(() => {});
+  }
 }
 
 /**

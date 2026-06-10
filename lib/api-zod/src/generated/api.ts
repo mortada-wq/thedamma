@@ -27,7 +27,7 @@ export const ListSongsResponseItem = zod.object({
   "singer": zod.string(),
   "era": zod.string(),
   "geography": zod.string(),
-  "inputType": zod.enum(['youtube', 'name']),
+  "inputType": zod.enum(['youtube', 'name', 'file']),
   "inputValue": zod.string(),
   "metadata": zod.object({
   "title": zod.string(),
@@ -103,7 +103,7 @@ export const ExportAllSongsResponse = zod.object({
   "singer": zod.string(),
   "era": zod.string(),
   "geography": zod.string(),
-  "inputType": zod.enum(['youtube', 'name']),
+  "inputType": zod.enum(['youtube', 'name', 'file']),
   "inputValue": zod.string(),
   "metadata": zod.object({
   "title": zod.string(),
@@ -146,7 +146,7 @@ export const GetSongResponse = zod.object({
   "singer": zod.string(),
   "era": zod.string(),
   "geography": zod.string(),
-  "inputType": zod.enum(['youtube', 'name']),
+  "inputType": zod.enum(['youtube', 'name', 'file']),
   "inputValue": zod.string(),
   "metadata": zod.object({
   "title": zod.string(),

@@ -268,7 +268,7 @@ components:
           type: string
         inputType:
           type: string
-          enum: [youtube, name]
+          enum: [youtube, name, file]
         inputValue:
           type: string
         metadata:

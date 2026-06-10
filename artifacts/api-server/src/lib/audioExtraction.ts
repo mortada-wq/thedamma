@@ -222,7 +222,55 @@ function toSource(
 }
 
 /** Max bytes Gemini accepts inline (8 MB limit; use 7 MB to be safe). */
-const MAX_INLINE_BYTES = 7 * 1024 * 1024;
+export const MAX_INLINE_BYTES = 7 * 1024 * 1024;
+
+/**
+ * Convert any audio/video file to an mp3 suitable for Gemini inline upload.
+ * Creates a temp dir, converts with ffmpeg, re-encodes at 16 kbps mono if > 7 MB.
+ * Caller MUST call `rm(result.tempDir, { recursive: true, force: true })` when done.
+ */
+export async function convertToMp3ForGemini(
+  inputPath: string,
+): Promise<{ mp3Path: string; tempDir: string }> {
+  const dir = await mkdtemp(join(tmpdir(), "songforge-up-"));
+  const mp3Path = join(dir, "audio.mp3");
+
+  await runFfmpeg(
+    [
+      "-hide_banner", "-loglevel", "error",
+      "-i", inputPath,
+      "-vn",
+      "-ar", "44100",
+      "-ac", "2",
+      "-ab", "128k",
+      "-f", "mp3",
+      "-y",
+      mp3Path,
+    ],
+    180_000,
+  );
+
+  const { size } = await stat(mp3Path);
+  if (size > MAX_INLINE_BYTES) {
+    const smallPath = join(dir, "audio-small.mp3");
+    await runFfmpeg(
+      [
+        "-hide_banner", "-loglevel", "error",
+        "-i", mp3Path,
+        "-b:a", "16k",
+        "-ac", "1",
+        "-y",
+        smallPath,
+      ],
+      90_000,
+    );
+    if (existsSync(smallPath)) {
+      return { mp3Path: smallPath, tempDir: dir };
+    }
+  }
+
+  return { mp3Path, tempDir: dir };
+}
 
 /**
  * Fetch YouTube metadata and download audio for Gemini inline analysis.

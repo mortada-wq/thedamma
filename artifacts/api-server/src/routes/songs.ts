@@ -1,9 +1,16 @@
 import { Router, type IRouter } from "express";
+import { rm } from "node:fs/promises";
 import { desc, eq } from "drizzle-orm";
+import multer from "multer";
 import { db, songsTable, type Song as DbSong } from "@workspace/db";
 import { GenerateSongBody, GetSongParams, DeleteSongParams } from "@workspace/api-zod";
-import { classifyInput, generateSongMetadata, generateFromKnowledgeOnly, isAllowedYouTubeUrl, isBotCheckError } from "../lib/songMetadata";
+import { classifyInput, generateSongMetadata, generateFromKnowledgeOnly, generateFromUploadedAudio, isAllowedYouTubeUrl, isBotCheckError } from "../lib/songMetadata";
 import { isVideoUnavailableError, fetchYouTubeOEmbedTitle } from "../lib/audioExtraction";
+
+const upload = multer({
+  dest: "/tmp",
+  limits: { fileSize: 200 * 1024 * 1024 },
+});
 
 const router: IRouter = Router();
 
@@ -31,6 +38,36 @@ function countBy(rows: DbSong[], key: (r: DbSong) => string) {
     .map(([label, count]) => ({ label, count }))
     .sort((a, b) => b.count - a.count);
 }
+
+router.post("/songs/upload", upload.single("file"), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: "No file provided" });
+  }
+  const { path: filePath, originalname } = req.file;
+  try {
+    const metadata = await generateFromUploadedAudio(filePath, originalname);
+    const [row] = await db
+      .insert(songsTable)
+      .values({
+        title: metadata.title || originalname,
+        singer: metadata.singer || "Unknown",
+        era: metadata.era || "Unknown",
+        geography: metadata.geography || "Unknown",
+        inputType: "file",
+        inputValue: originalname,
+        metadata,
+      })
+      .returning();
+    return res.status(201).json(serialize(row));
+  } catch (err) {
+    req.log.error({ err }, "Upload generation failed");
+    return res.status(502).json({
+      error: "Could not analyze the uploaded file. Make sure it contains audio and try again.",
+    });
+  } finally {
+    await rm(filePath, { force: true }).catch(() => {});
+  }
+});
 
 router.get("/songs", async (_req, res) => {
   const rows = await db.select().from(songsTable).orderBy(desc(songsTable.createdAt));

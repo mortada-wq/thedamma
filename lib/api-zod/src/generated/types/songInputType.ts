@@ -12,4 +12,5 @@ export type SongInputType = typeof SongInputType[keyof typeof SongInputType];
 export const SongInputType = {
   youtube: 'youtube',
   name: 'name',
+  file: 'file',
 } as const;

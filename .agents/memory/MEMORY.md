@@ -1,1 +1,3 @@
-- [Song dossier pipeline (Gemini native audio)](audio-extraction-pipeline.md) — yt-dlp downloads audio → gemini-2.5-flash hears it inline → full dossier JSON; @google/genai must NOT be in esbuild external list.
+- [Audio pipeline](audio-pipeline.md) — Gemini native-audio pipeline; yt-dlp → mp3 → base64 inline to gemini-2.5-flash; 7MB limit with 16kbps mono re-encode fallback
+- [Bot-check fallback](bot-check-fallback.md) — YouTube blocks cloud IPs; name→knowledge-only, URL→oEmbed title→knowledge-only; cookies optional via YTDLP_COOKIES
+- [File upload pipeline](file-upload-pipeline.md) — POST /api/songs/upload via multer; ffmpeg converts any format→mp3; same Gemini inline path; inputType="file"
