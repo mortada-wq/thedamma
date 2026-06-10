@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: songs
+    description: Song metadata operations
 paths:
   /healthz:
     get:
@@ -24,7 +26,120 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /songs:
+    get:
+      operationId: listSongs
+      tags: [songs]
+      summary: List all songs
+      description: Returns every song with full metadata, newest first
+      responses:
+        "200":
+          description: A list of songs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Song"
+    post:
+      operationId: generateSong
+      tags: [songs]
+      summary: Generate metadata for a song
+      description: Accepts a YouTube link or song name and generates full structured metadata using AI
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SongInput"
+      responses:
+        "201":
+          description: Song created with generated metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Song"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "502":
+          description: Generation failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /songs/stats:
+    get:
+      operationId: getSongStats
+      tags: [songs]
+      summary: Library statistics
+      description: Aggregate counts across the song library for the dashboard
+      responses:
+        "200":
+          description: Library statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SongStats"
+  /songs/export:
+    get:
+      operationId: exportAllSongs
+      tags: [songs]
+      summary: Export the entire library as one RAG file
+      description: Returns a single combined JSON document containing every song's metadata
+      responses:
+        "200":
+          description: Combined RAG export
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RagExport"
+  /songs/{id}:
+    get:
+      operationId: getSong
+      tags: [songs]
+      summary: Get a single song
+      parameters:
+        - $ref: "#/components/parameters/SongId"
+      responses:
+        "200":
+          description: The song
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Song"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      operationId: deleteSong
+      tags: [songs]
+      summary: Delete a song
+      parameters:
+        - $ref: "#/components/parameters/SongId"
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 components:
+  parameters:
+    SongId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
   schemas:
     HealthStatus:
       type: object
@@ -33,4 +148,196 @@ components:
           type: string
       required:
         - status
-
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+    TrackSegment:
+      type: object
+      description: A single interval in the detailed track breakdown
+      properties:
+        timestamp:
+          type: string
+          description: Start time of this interval, e.g. "0:00" or "1:24"
+        label:
+          type: string
+          description: Section name, e.g. "Intro", "Verse 1", "Chorus", "Instrumental break"
+        instruments:
+          type: array
+          items:
+            type: string
+          description: Instruments active during this interval
+        vocals:
+          type: string
+          description: Vocal description for this interval (which voices, harmony, solo, etc.)
+        notes:
+          type: string
+          description: Musical notes — key, tempo, mode, melodic motion, dynamics
+      required:
+        - timestamp
+        - label
+        - instruments
+        - vocals
+        - notes
+    SongMetadata:
+      type: object
+      description: Full structured musicological metadata for a song
+      properties:
+        title:
+          type: string
+        singer:
+          type: string
+          description: Performing singer(s)
+        composer:
+          type: string
+        era:
+          type: string
+          description: Time period / musical era
+        geography:
+          type: string
+          description: Region or country of origin
+        history:
+          type: string
+          description: Historical and cultural background
+        subject:
+          type: string
+          description: Main theme or subject of the song
+        relatedSubjects:
+          type: array
+          items:
+            type: string
+        dialect:
+          type: string
+          description: Language and dialect of the lyrics
+        instruments:
+          type: array
+          items:
+            type: string
+          description: All instruments used
+        voices:
+          type: array
+          items:
+            type: string
+          description: All distinct voices / vocal parts
+        relatedWorks:
+          type: array
+          items:
+            type: string
+        transcription:
+          type: string
+          description: Full lyric transcription
+        pronunciationNotes:
+          type: string
+          description: Detailed notes on how to pronounce the lyrics
+        track:
+          type: array
+          items:
+            $ref: "#/components/schemas/TrackSegment"
+          description: Interval-by-interval breakdown of the music
+      required:
+        - title
+        - singer
+        - composer
+        - era
+        - geography
+        - history
+        - subject
+        - relatedSubjects
+        - dialect
+        - instruments
+        - voices
+        - relatedWorks
+        - transcription
+        - pronunciationNotes
+        - track
+    Song:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        singer:
+          type: string
+        era:
+          type: string
+        geography:
+          type: string
+        inputType:
+          type: string
+          enum: [youtube, name]
+        inputValue:
+          type: string
+        metadata:
+          $ref: "#/components/schemas/SongMetadata"
+        createdAt:
+          type: string
+      required:
+        - id
+        - title
+        - singer
+        - era
+        - geography
+        - inputType
+        - inputValue
+        - metadata
+        - createdAt
+    SongInput:
+      type: object
+      properties:
+        input:
+          type: string
+          minLength: 1
+          description: A YouTube link or the name of a song
+      required:
+        - input
+    StatCount:
+      type: object
+      properties:
+        label:
+          type: string
+        count:
+          type: integer
+      required:
+        - label
+        - count
+    SongStats:
+      type: object
+      properties:
+        total:
+          type: integer
+        byEra:
+          type: array
+          items:
+            $ref: "#/components/schemas/StatCount"
+        byGeography:
+          type: array
+          items:
+            $ref: "#/components/schemas/StatCount"
+        byDialect:
+          type: array
+          items:
+            $ref: "#/components/schemas/StatCount"
+      required:
+        - total
+        - byEra
+        - byGeography
+        - byDialect
+    RagExport:
+      type: object
+      properties:
+        generatedAt:
+          type: string
+        count:
+          type: integer
+        songs:
+          type: array
+          items:
+            $ref: "#/components/schemas/Song"
+      required:
+        - generatedAt
+        - count
+        - songs

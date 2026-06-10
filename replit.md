@@ -1,6 +1,6 @@
-# [Project name]
+# SongForge
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+A musicological knowledge base: paste a YouTube link or type a song name, and AI generates a rich dossier (singer, composer, era, geography, history, subject, dialect, instruments, voices, related works, full lyric transcription, pronunciation notes, and an interval-by-interval track breakdown). Songs are saved to a growing library and exportable as RAG JSON to feed AI music generators.
 
 ## Run & Operate
 
@@ -22,19 +22,28 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- API contract (source of truth): `lib/api-spec/openapi.yaml` → regenerate hooks/Zod with the codegen command.
+- DB schema: `lib/db/src/schema/songs.ts` (`songsTable`, `SongMetadata`/`TrackSegment` types).
+- Backend routes: `artifacts/api-server/src/routes/songs.ts`; AI generation helper: `artifacts/api-server/src/lib/songMetadata.ts`.
+- Frontend (React+Vite): `artifacts/songforge/src` — `pages/home.tsx`, `pages/song-detail.tsx`, components in `components/`, theme in `index.css`.
+- OpenAI access: `@workspace/integrations-openai-ai-server` (via Replit AI Integrations proxy).
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Contract-first: OpenAPI drives generated React Query hooks (`@workspace/api-client-react`) and Zod schemas (`@workspace/api-zod`).
+- AI metadata is requested with a strict JSON schema (`response_format: json_schema`) and re-validated server-side using the generated `GetSongResponse.shape.metadata` Zod schema before DB insert.
+- `inputType` (`youtube` | `name`) is classified by regex on the raw input; full metadata is stored as a JSON column, with `title`/`singer`/`era`/`geography` denormalized for list/stat queries.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- Catalog a song from a YouTube URL or a song name; AI produces a full musicological dossier.
+- Browse a growing library with a running count and archive stats (by era, geography, dialect).
+- View a per-song detail page with a track timeline, transcription, and pronunciation notes.
+- Export a single song as JSON, or the whole library as one combined RAG JSON file.
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- No emojis anywhere in the UI.
 
 ## Gotchas
 
