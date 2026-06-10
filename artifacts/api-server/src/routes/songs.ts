@@ -3,7 +3,7 @@ import { desc, eq } from "drizzle-orm";
 import { db, songsTable, type Song as DbSong } from "@workspace/db";
 import { GenerateSongBody, GetSongParams, DeleteSongParams } from "@workspace/api-zod";
 import { classifyInput, generateSongMetadata } from "../lib/songMetadata";
-import { extractRealSongData, isAllowedYouTubeUrl } from "../lib/audioExtraction";
+import { extractRealSongData, isAllowedYouTubeUrl, isBotCheckError } from "../lib/audioExtraction";
 
 const router: IRouter = Router();
 
@@ -79,6 +79,12 @@ router.post("/songs", async (req, res) => {
     realData = await extractRealSongData(input, inputType);
   } catch (err) {
     req.log.error({ err }, "Real song data extraction failed");
+    if (isBotCheckError(err)) {
+      return res.status(503).json({
+        error:
+          "YouTube is currently blocking automated access from this server. This usually affects the published app. Adding a YTDLP_COOKIES secret resolves it.",
+      });
+    }
     return res.status(502).json({
       error:
         inputType === "youtube"

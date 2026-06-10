@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { createReadStream } from "node:fs";
+import { createReadStream, writeFileSync } from "node:fs";
 import { mkdtemp, readdir, readFile, rm } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -98,6 +98,51 @@ function resolveYtDlpPath(): string {
 
 const YT_DLP = resolveYtDlpPath();
 
+let cookieFilePath: string | null | undefined;
+
+/**
+ * If a `YTDLP_COOKIES` secret is set (contents of a Netscape cookies.txt from a
+ * logged-in YouTube session), write it to a temp file once and reuse it. This is
+ * the reliable way past YouTube's "confirm you're not a bot" block on cloud IPs.
+ */
+function getCookieFile(): string | null {
+  if (cookieFilePath !== undefined) return cookieFilePath;
+  const content = process.env.YTDLP_COOKIES;
+  if (content && content.trim()) {
+    try {
+      const p = join(tmpdir(), "yt-cookies.txt");
+      writeFileSync(p, content, "utf8");
+      cookieFilePath = p;
+    } catch (err) {
+      logger.warn({ err }, "Failed to write yt-dlp cookies file");
+      cookieFilePath = null;
+    }
+  } else {
+    cookieFilePath = null;
+  }
+  return cookieFilePath;
+}
+
+/**
+ * Args shared by every yt-dlp call. The player-client list avoids the plain
+ * `web` client that triggers YouTube's anti-bot check most aggressively on
+ * datacenter IPs; cookies (when provided) are the robust fallback.
+ */
+function baseYtDlpArgs(): string[] {
+  const args = [
+    "--extractor-args",
+    "youtube:player_client=default,tv,web_safari,android,ios",
+  ];
+  const cookie = getCookieFile();
+  if (cookie) args.push("--cookies", cookie);
+  return args;
+}
+
+export function isBotCheckError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return /confirm you.?re not a bot|Sign in to confirm|cookies/i.test(msg);
+}
+
 function runYtDlp(
   args: string[],
   timeoutMs: number,
@@ -174,7 +219,7 @@ interface YtMeta {
 
 async function fetchMetadata(target: string): Promise<YtMeta> {
   const { stdout } = await runYtDlp(
-    ["-J", "--no-warnings", "--no-playlist", target],
+    [...baseYtDlpArgs(), "-J", "--no-warnings", "--no-playlist", target],
     90_000,
   );
   const parsed = JSON.parse(stdout) as YtMeta;
@@ -255,6 +300,7 @@ async function downloadCaptions(
   try {
     await runYtDlp(
       [
+        ...baseYtDlpArgs(),
         "--skip-download",
         writeFlag,
         "--sub-langs",
@@ -289,6 +335,7 @@ async function transcribeByChunks(
   try {
     await runYtDlp(
       [
+        ...baseYtDlpArgs(),
         "-f",
         "bestaudio",
         "-x",
