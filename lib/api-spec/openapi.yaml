@@ -14,6 +14,10 @@ tags:
     description: Song metadata operations
   - name: admin
     description: Admin configuration
+  - name: auth
+    description: Authentication
+  - name: projects
+    description: User projects
 paths:
   /healthz:
     get:
@@ -128,6 +132,291 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RagExport"
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Register a new account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthBody"
+      responses:
+        "201":
+          description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+        "409":
+          description: Email already in use
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Log in
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthBody"
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Log out
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                required: [ok]
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /projects/public:
+    get:
+      operationId: getPublicProjects
+      tags: [projects]
+      summary: Public project gallery (6 newest public projects)
+      responses:
+        "200":
+          description: Public projects
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PublicProject"
+  /projects:
+    get:
+      operationId: listProjects
+      tags: [projects]
+      summary: List my projects
+      responses:
+        "200":
+          description: My projects
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProjectSummary"
+    post:
+      operationId: createProject
+      tags: [projects]
+      summary: Create a new project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewProjectInput"
+      responses:
+        "201":
+          description: Created project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectSummary"
+  /projects/{projectId}:
+    get:
+      operationId: getProject
+      tags: [projects]
+      summary: Get project with entries
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      responses:
+        "200":
+          description: Project with entries
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    patch:
+      operationId: patchProject
+      tags: [projects]
+      summary: Update project title or visibility
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectPatch"
+      responses:
+        "200":
+          description: Updated project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectSummary"
+    delete:
+      operationId: deleteProject
+      tags: [projects]
+      summary: Delete a project
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      responses:
+        "204":
+          description: Deleted
+  /projects/{projectId}/entries:
+    post:
+      operationId: createEntry
+      tags: [projects]
+      summary: Add an entry to a project
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewEntryInput"
+      responses:
+        "201":
+          description: Created entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Entry"
+  /projects/{projectId}/entries/{entryId}:
+    delete:
+      operationId: deleteEntry
+      tags: [projects]
+      summary: Delete an entry
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+        - name: entryId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+  /projects/{projectId}/export:
+    get:
+      operationId: exportProject
+      tags: [projects]
+      summary: Export project as JSON
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      responses:
+        "200":
+          description: Project export
+          content:
+            application/json:
+              schema:
+                type: object
+  /admin/users:
+    get:
+      operationId: listUsers
+      tags: [admin]
+      summary: List all users
+      responses:
+        "200":
+          description: All users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminUser"
+  /admin/users/invite:
+    post:
+      operationId: inviteUser
+      tags: [admin]
+      summary: Invite a user by email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InviteInput"
+      responses:
+        "201":
+          description: Invited user with temporary password
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvitedUser"
+  /admin/users/{userId}:
+    patch:
+      operationId: patchUser
+      tags: [admin]
+      summary: Approve or change user role
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserRoleInput"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUser"
+    delete:
+      operationId: deleteUser
+      tags: [admin]
+      summary: Delete a user
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+      responses:
+        "204":
+          description: Deleted
   /songs/{id}:
     get:
       operationId: getSong
@@ -198,6 +487,18 @@ components:
   parameters:
     SongId:
       name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    ProjectId:
+      name: projectId
+      in: path
+      required: true
+      schema:
+        type: integer
+    UserId:
+      name: userId
       in: path
       required: true
       schema:
@@ -428,3 +729,174 @@ components:
       required:
         - activeProvider
         - activeModel
+    AuthBody:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+      required: [email, password]
+    AuthUser:
+      type: object
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        role:
+          type: string
+          enum: [pending, user, admin]
+      required: [id, email, role]
+    AdminUser:
+      type: object
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        role:
+          type: string
+          enum: [pending, user, admin]
+        createdAt:
+          type: string
+      required: [id, email, role, createdAt]
+    InvitedUser:
+      type: object
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        role:
+          type: string
+        tempPassword:
+          type: string
+      required: [id, email, role, tempPassword]
+    PublicProject:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        category:
+          type: string
+        summary:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+        ownerEmail:
+          type: string
+        entryCount:
+          type: integer
+      required: [id, title, category, createdAt, ownerEmail, entryCount]
+    ProjectSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        category:
+          type: string
+        provider:
+          type: string
+        summary:
+          type: string
+          nullable: true
+        isPublic:
+          type: boolean
+        createdAt:
+          type: string
+        entryCount:
+          type: integer
+      required: [id, title, category, provider, isPublic, createdAt, entryCount]
+    NewProjectInput:
+      type: object
+      properties:
+        title:
+          type: string
+        category:
+          type: string
+          enum: [rag-dataset, fine-tune, document, other]
+        provider:
+          type: string
+      required: [title, category, provider]
+    ProjectPatch:
+      type: object
+      properties:
+        title:
+          type: string
+        isPublic:
+          type: boolean
+    NewEntryInput:
+      type: object
+      properties:
+        inputUrl:
+          type: string
+      required: [inputUrl]
+    InviteInput:
+      type: object
+      properties:
+        email:
+          type: string
+      required: [email]
+    UserRoleInput:
+      type: object
+      properties:
+        role:
+          type: string
+          enum: [pending, user, admin]
+      required: [role]
+    EntryDescription:
+      type: object
+      properties:
+        label:
+          type: string
+        text:
+          type: string
+      required: [label, text]
+    Entry:
+      type: object
+      properties:
+        id:
+          type: integer
+        projectId:
+          type: integer
+        inputUrl:
+          type: string
+        aiQuestion:
+          type: string
+          nullable: true
+        descriptions:
+          type: array
+          items:
+            $ref: "#/components/schemas/EntryDescription"
+        createdAt:
+          type: string
+      required: [id, projectId, inputUrl, descriptions, createdAt]
+    ProjectDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        category:
+          type: string
+        provider:
+          type: string
+        summary:
+          type: string
+          nullable: true
+        isPublic:
+          type: boolean
+        createdAt:
+          type: string
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/Entry"
+      required: [id, title, category, provider, isPublic, createdAt, entries]

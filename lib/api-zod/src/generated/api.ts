@@ -157,6 +157,230 @@ export const ExportAllSongsResponse = zod.object({
 
 
 /**
+ * @summary Register a new account
+ */
+export const RegisterBody = zod.object({
+  "email": zod.string(),
+  "password": zod.string()
+})
+
+
+/**
+ * @summary Log in
+ */
+export const LoginBody = zod.object({
+  "email": zod.string(),
+  "password": zod.string()
+})
+
+export const LoginResponse = zod.object({
+  "id": zod.number(),
+  "email": zod.string(),
+  "role": zod.enum(['pending', 'user', 'admin'])
+})
+
+
+/**
+ * @summary Log out
+ */
+export const LogoutResponse = zod.object({
+  "ok": zod.boolean()
+})
+
+
+/**
+ * @summary Get current user
+ */
+export const GetMeResponse = zod.object({
+  "id": zod.number(),
+  "email": zod.string(),
+  "role": zod.enum(['pending', 'user', 'admin'])
+})
+
+
+/**
+ * @summary Public project gallery (6 newest public projects)
+ */
+export const GetPublicProjectsResponseItem = zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "category": zod.string(),
+  "summary": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "ownerEmail": zod.string(),
+  "entryCount": zod.number()
+})
+export const GetPublicProjectsResponse = zod.array(GetPublicProjectsResponseItem)
+
+
+/**
+ * @summary List my projects
+ */
+export const ListProjectsResponseItem = zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "category": zod.string(),
+  "provider": zod.string(),
+  "summary": zod.string().nullish(),
+  "isPublic": zod.boolean(),
+  "createdAt": zod.string(),
+  "entryCount": zod.number()
+})
+export const ListProjectsResponse = zod.array(ListProjectsResponseItem)
+
+
+/**
+ * @summary Create a new project
+ */
+export const CreateProjectBody = zod.object({
+  "title": zod.string(),
+  "category": zod.enum(['rag-dataset', 'fine-tune', 'document', 'other']),
+  "provider": zod.string()
+})
+
+
+/**
+ * @summary Get project with entries
+ */
+export const GetProjectParams = zod.object({
+  "projectId": zod.coerce.number()
+})
+
+export const GetProjectResponse = zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "category": zod.string(),
+  "provider": zod.string(),
+  "summary": zod.string().nullish(),
+  "isPublic": zod.boolean(),
+  "createdAt": zod.string(),
+  "entries": zod.array(zod.object({
+  "id": zod.number(),
+  "projectId": zod.number(),
+  "inputUrl": zod.string(),
+  "aiQuestion": zod.string().nullish(),
+  "descriptions": zod.array(zod.object({
+  "label": zod.string(),
+  "text": zod.string()
+})),
+  "createdAt": zod.string()
+}))
+})
+
+
+/**
+ * @summary Update project title or visibility
+ */
+export const PatchProjectParams = zod.object({
+  "projectId": zod.coerce.number()
+})
+
+export const PatchProjectBody = zod.object({
+  "title": zod.string().optional(),
+  "isPublic": zod.boolean().optional()
+})
+
+export const PatchProjectResponse = zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "category": zod.string(),
+  "provider": zod.string(),
+  "summary": zod.string().nullish(),
+  "isPublic": zod.boolean(),
+  "createdAt": zod.string(),
+  "entryCount": zod.number()
+})
+
+
+/**
+ * @summary Delete a project
+ */
+export const DeleteProjectParams = zod.object({
+  "projectId": zod.coerce.number()
+})
+
+
+/**
+ * @summary Add an entry to a project
+ */
+export const CreateEntryParams = zod.object({
+  "projectId": zod.coerce.number()
+})
+
+export const CreateEntryBody = zod.object({
+  "inputUrl": zod.string()
+})
+
+
+/**
+ * @summary Delete an entry
+ */
+export const DeleteEntryParams = zod.object({
+  "projectId": zod.coerce.number(),
+  "entryId": zod.coerce.number()
+})
+
+
+/**
+ * @summary Export project as JSON
+ */
+export const ExportProjectParams = zod.object({
+  "projectId": zod.coerce.number()
+})
+
+export const ExportProjectResponse = zod.object({
+
+}).passthrough()
+
+
+/**
+ * @summary List all users
+ */
+export const ListUsersResponseItem = zod.object({
+  "id": zod.number(),
+  "email": zod.string(),
+  "role": zod.enum(['pending', 'user', 'admin']),
+  "createdAt": zod.string()
+})
+export const ListUsersResponse = zod.array(ListUsersResponseItem)
+
+
+/**
+ * @summary Invite a user by email
+ */
+export const InviteUserBody = zod.object({
+  "email": zod.string()
+})
+
+
+/**
+ * @summary Approve or change user role
+ */
+export const PatchUserParams = zod.object({
+  "userId": zod.coerce.number()
+})
+
+export const PatchUserBody = zod.object({
+  "role": zod.enum(['pending', 'user', 'admin'])
+})
+
+export const PatchUserResponse = zod.object({
+  "id": zod.number(),
+  "email": zod.string(),
+  "role": zod.enum(['pending', 'user', 'admin']),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Delete a user
+ */
+export const DeleteUserParams = zod.object({
+  "userId": zod.coerce.number()
+})
+
+
+/**
  * @summary Get a single song
  */
 export const GetSongParams = zod.object({

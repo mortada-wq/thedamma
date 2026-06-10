@@ -1,3 +1,7 @@
 - [Audio pipeline](audio-pipeline.md) — Gemini native-audio pipeline; yt-dlp → mp3 → base64 inline to gemini-2.5-flash; 7MB limit with 16kbps mono re-encode fallback
 - [Bot-check fallback](bot-check-fallback.md) — YouTube blocks cloud IPs; name→knowledge-only, URL→oEmbed title→knowledge-only; cookies optional via YTDLP_COOKIES
 - [File upload pipeline](file-upload-pipeline.md) — POST /api/songs/upload via multer; ffmpeg converts any format→mp3; same Gemini inline path; inputType="file"
+- [Session save race](session-save-race.md) — must call req.session.save() before res.json() or the cookie is sent before PG commits the session row
+- [Orval body name collision](orval-body-collision.md) — OpenAPI component schema names must NOT match {OperationId}Body pattern or Orval exports same name twice; use NewXxxInput/XxxPatch
+- [Zod version in api-server](zod-version.md) — catalog has zod v3; use z.string().email() not z.email() (v4); import from "zod" not "zod/v4"
+- [user_sessions table](user-sessions-table.md) — connect-pg-simple createTableIfMissing may silently fail on cold start; pre-create table in psql if sessions break

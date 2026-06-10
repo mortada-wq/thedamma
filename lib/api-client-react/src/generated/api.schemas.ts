@@ -135,3 +135,140 @@ export interface AdminSettings {
   activeModel: string;
 }
 
+export interface AuthBody {
+  email: string;
+  password: string;
+}
+
+export type AuthUserRole = typeof AuthUserRole[keyof typeof AuthUserRole];
+
+
+export const AuthUserRole = {
+  pending: 'pending',
+  user: 'user',
+  admin: 'admin',
+} as const;
+
+export interface AuthUser {
+  id: number;
+  email: string;
+  role: AuthUserRole;
+}
+
+export type AdminUserRole = typeof AdminUserRole[keyof typeof AdminUserRole];
+
+
+export const AdminUserRole = {
+  pending: 'pending',
+  user: 'user',
+  admin: 'admin',
+} as const;
+
+export interface AdminUser {
+  id: number;
+  email: string;
+  role: AdminUserRole;
+  createdAt: string;
+}
+
+export interface InvitedUser {
+  id: number;
+  email: string;
+  role: string;
+  tempPassword: string;
+}
+
+export interface PublicProject {
+  id: number;
+  title: string;
+  category: string;
+  summary?: string | null;
+  createdAt: string;
+  ownerEmail: string;
+  entryCount: number;
+}
+
+export interface ProjectSummary {
+  id: number;
+  title: string;
+  category: string;
+  provider: string;
+  summary?: string | null;
+  isPublic: boolean;
+  createdAt: string;
+  entryCount: number;
+}
+
+export type NewProjectInputCategory = typeof NewProjectInputCategory[keyof typeof NewProjectInputCategory];
+
+
+export const NewProjectInputCategory = {
+  'rag-dataset': 'rag-dataset',
+  'fine-tune': 'fine-tune',
+  document: 'document',
+  other: 'other',
+} as const;
+
+export interface NewProjectInput {
+  title: string;
+  category: NewProjectInputCategory;
+  provider: string;
+}
+
+export interface ProjectPatch {
+  title?: string;
+  isPublic?: boolean;
+}
+
+export interface NewEntryInput {
+  inputUrl: string;
+}
+
+export interface InviteInput {
+  email: string;
+}
+
+export type UserRoleInputRole = typeof UserRoleInputRole[keyof typeof UserRoleInputRole];
+
+
+export const UserRoleInputRole = {
+  pending: 'pending',
+  user: 'user',
+  admin: 'admin',
+} as const;
+
+export interface UserRoleInput {
+  role: UserRoleInputRole;
+}
+
+export interface EntryDescription {
+  label: string;
+  text: string;
+}
+
+export interface Entry {
+  id: number;
+  projectId: number;
+  inputUrl: string;
+  aiQuestion?: string | null;
+  descriptions: EntryDescription[];
+  createdAt: string;
+}
+
+export interface ProjectDetail {
+  id: number;
+  title: string;
+  category: string;
+  provider: string;
+  summary?: string | null;
+  isPublic: boolean;
+  createdAt: string;
+  entries: Entry[];
+}
+
+export type Logout200 = {
+  ok: boolean;
+};
+
+export type ExportProject200 = { [key: string]: unknown };
+

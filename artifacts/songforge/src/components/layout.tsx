@@ -3,11 +3,13 @@ import { Link } from "wouter";
 import { useExportAllSongs, getExportAllSongsQueryKey } from "@workspace/api-client-react";
 import { downloadJson } from "@/lib/export";
 import { Button } from "@/components/ui/button";
-import { Download, LayoutGrid, Settings2 } from "lucide-react";
+import { Download, LayoutGrid, Settings2, FolderOpen, LogOut, LogIn } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/context/auth";
 
 export function Layout({ children }: { children: ReactNode }) {
   const { toast } = useToast();
+  const auth = useAuth();
   const { refetch } = useExportAllSongs({
     query: { enabled: false, queryKey: getExportAllSongsQueryKey() },
   });
@@ -17,19 +19,15 @@ export function Layout({ children }: { children: ReactNode }) {
       const result = await refetch();
       if (result.data) {
         downloadJson(result.data, "damma-library.json");
-        toast({
-          title: "Library exported",
-          description: `Exported ${result.data.count} songs successfully.`,
-        });
+        toast({ title: "Library exported", description: `Exported ${result.data.count} songs successfully.` });
       }
-    } catch (e) {
-      toast({
-        title: "Export failed",
-        description: "Could not export the library. Please try again.",
-        variant: "destructive",
-      });
+    } catch {
+      toast({ title: "Export failed", description: "Could not export the library. Please try again.", variant: "destructive" });
     }
   };
+
+  const isAuthenticated = auth.status === "authenticated";
+  const isAdmin = isAuthenticated && auth.user.role === "admin";
 
   return (
     <div className="min-h-[100dvh] flex flex-col relative">
@@ -66,39 +64,72 @@ export function Layout({ children }: { children: ReactNode }) {
 
         {/* ── Nav bar ── */}
         <div className="border-t border-border/50">
-          <div className="container mx-auto px-4 h-11 flex items-center justify-center gap-3">
-            <Link href="/rag-grid">
+          <div className="container mx-auto px-4 h-11 flex items-center justify-between">
+            {/* Left: main nav */}
+            <div className="flex items-center gap-1">
+              <Link href="/rag-grid">
+                <Button variant="ghost" size="sm" className="gap-2 text-xs font-medium rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary active:scale-[0.98] transition-transform h-7 px-3">
+                  <LayoutGrid className="w-3.5 h-3.5" />
+                  RAG Grid
+                </Button>
+              </Link>
+              {isAuthenticated && (
+                <>
+                  <div className="w-px h-4 bg-border mx-1" />
+                  <Link href="/projects">
+                    <Button variant="ghost" size="sm" className="gap-2 text-xs font-medium rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary active:scale-[0.98] transition-transform h-7 px-3">
+                      <FolderOpen className="w-3.5 h-3.5" />
+                      Projects
+                    </Button>
+                  </Link>
+                </>
+              )}
+              {isAdmin && (
+                <>
+                  <div className="w-px h-4 bg-border mx-1" />
+                  <Link href="/admin">
+                    <Button variant="ghost" size="sm" className="gap-2 text-xs font-medium rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary active:scale-[0.98] transition-transform h-7 px-3">
+                      <Settings2 className="w-3.5 h-3.5" />
+                      Admin
+                    </Button>
+                  </Link>
+                </>
+              )}
+            </div>
+
+            {/* Right: auth + export */}
+            <div className="flex items-center gap-1">
               <Button
                 variant="ghost"
                 size="sm"
-                className="gap-2 text-xs font-medium rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary active:scale-[0.98] transition-transform h-7 px-3"
+                className="gap-2 text-xs font-medium rounded-full text-brand-blue hover:bg-brand-blue/10 active:scale-[0.98] transition-transform h-7 px-3"
+                onClick={handleExportLibrary}
+                data-testid="button-export-library"
               >
-                <LayoutGrid className="w-3.5 h-3.5" />
-                RAG Grid
+                <Download className="w-3.5 h-3.5" />
+                Export RAG
               </Button>
-            </Link>
-            <div className="w-px h-4 bg-border" />
-            <Link href="/admin">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="gap-2 text-xs font-medium rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary active:scale-[0.98] transition-transform h-7 px-3"
-              >
-                <Settings2 className="w-3.5 h-3.5" />
-                Admin
-              </Button>
-            </Link>
-            <div className="w-px h-4 bg-border" />
-            <Button
-              variant="ghost"
-              size="sm"
-              className="gap-2 text-xs font-medium rounded-full text-brand-blue hover:bg-brand-blue/10 active:scale-[0.98] transition-transform h-7 px-3"
-              onClick={handleExportLibrary}
-              data-testid="button-export-library"
-            >
-              <Download className="w-3.5 h-3.5" />
-              Export RAG Library
-            </Button>
+              <div className="w-px h-4 bg-border mx-1" />
+              {isAuthenticated ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-2 text-xs font-medium rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary h-7 px-3"
+                  onClick={() => auth.logout()}
+                  title={auth.user.email}
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  Sign out
+                </Button>
+              ) : (
+                <Link href="/login">
+                  <Button variant="ghost" size="sm" className="gap-2 text-xs font-medium rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary h-7 px-3">
+                    <LogIn className="w-3.5 h-3.5" />
+                    Sign in
+                  </Button>
+                </Link>
+              )}
+            </div>
           </div>
         </div>
       </div>
