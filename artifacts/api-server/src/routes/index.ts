@@ -5,6 +5,7 @@ import adminRouter from "./admin";
 import authRouter from "./auth";
 import projectsRouter from "./projects";
 import usersRouter from "./users";
+import groupsRouter from "./groups";
 
 const router: IRouter = Router();
 
@@ -14,5 +15,6 @@ router.use(adminRouter);
 router.use(songsRouter);
 router.use(projectsRouter);
 router.use(usersRouter);
+router.use(groupsRouter);
 
 export default router;

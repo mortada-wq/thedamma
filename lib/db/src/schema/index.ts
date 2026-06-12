@@ -21,3 +21,4 @@ export * from "./songs";
 export * from "./settings";
 export * from "./users";
 export * from "./projects";
+export * from "./groups";

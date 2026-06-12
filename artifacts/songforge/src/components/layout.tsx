@@ -3,7 +3,7 @@ import { Link } from "wouter";
 import { useExportAllSongs, getExportAllSongsQueryKey } from "@workspace/api-client-react";
 import { downloadJson } from "@/lib/export";
 import { Button } from "@/components/ui/button";
-import { Download, LayoutGrid, Settings2, FolderOpen, LogOut, LogIn } from "lucide-react";
+import { Download, LayoutGrid, Settings2, FolderOpen, LogOut, LogIn, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/auth";
 
@@ -80,6 +80,13 @@ export function Layout({ children }: { children: ReactNode }) {
                     <Button variant="ghost" size="sm" className="gap-2 text-xs font-medium rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary active:scale-[0.98] transition-transform h-7 px-3">
                       <FolderOpen className="w-3.5 h-3.5" />
                       Projects
+                    </Button>
+                  </Link>
+                  <div className="w-px h-4 bg-border mx-1" />
+                  <Link href="/groups">
+                    <Button variant="ghost" size="sm" className="gap-2 text-xs font-medium rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary active:scale-[0.98] transition-transform h-7 px-3">
+                      <MessageSquare className="w-3.5 h-3.5" />
+                      Groups
                     </Button>
                   </Link>
                 </>

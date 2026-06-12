@@ -13,6 +13,8 @@ import { Register } from "@/pages/register";
 import { Pending } from "@/pages/pending";
 import { Projects } from "@/pages/projects";
 import { ProjectDetail } from "@/pages/project-detail";
+import { Groups } from "@/pages/groups";
+import { GroupDetail } from "@/pages/group-detail";
 import { AuthProvider, useAuth } from "@/context/auth";
 
 const queryClient = new QueryClient({
@@ -44,6 +46,18 @@ function Router() {
       <Route path="/projects">
         <Layout>
           <ProtectedRoute component={Projects} />
+        </Layout>
+      </Route>
+      <Route path="/groups/:id">
+        {() => (
+          <Layout>
+            <ProtectedRoute component={GroupDetail} />
+          </Layout>
+        )}
+      </Route>
+      <Route path="/groups">
+        <Layout>
+          <ProtectedRoute component={Groups} />
         </Layout>
       </Route>
       <Route path="/">
