@@ -115,7 +115,7 @@ function baseYtDlpArgs(): string[] {
 
 export function isBotCheckError(err: unknown): boolean {
   const msg = err instanceof Error ? err.message : String(err);
-  return /confirm you.?re not a bot|Sign in to confirm|cookies/i.test(msg);
+  return /confirm you.?re not a bot|Sign in to confirm|cookies|HTTP Error 403|HTTP Error 429|Too Many Requests|Precondition Failed|requires authentication|age.restricted|login required|not available in your country|geo.?restrict/i.test(msg);
 }
 
 export function isVideoUnavailableError(err: unknown): boolean {

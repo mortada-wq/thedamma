@@ -216,12 +216,33 @@ router.post("/songs", async (req, res) => {
       } else {
         return res.status(502).json({ error: "That video is unavailable. Try a different link or type the song name." });
       }
+    } else if (inputType === "youtube") {
+      // Unrecognised YouTube error — try oEmbed title → knowledge-only as last resort
+      req.log.warn({ err }, "Unrecognised YouTube error — attempting oEmbed fallback");
+      const oEmbedTitle = await fetchYouTubeOEmbedTitle(input);
+      if (!oEmbedTitle) {
+        return res.status(503).json({
+          error:
+            "YouTube is not accessible from this server. Paste the song title into the search box instead of a link.",
+        });
+      }
+      try {
+        req.log.info({ oEmbedTitle, activeProvider, activeModel }, "YouTube blocked — knowledge-only fallback");
+        metadata = await generateFromKnowledgeOnly(oEmbedTitle, activeProvider, activeModel);
+        savedInputType = "name";
+        savedInputValue = oEmbedTitle;
+        generationNote =
+          "Dossier generated from knowledge only — YouTube audio could not be accessed from this server.";
+      } catch (fallbackErr) {
+        req.log.error({ fallbackErr }, "Knowledge-only fallback failed after YouTube block");
+        return res.status(503).json({
+          error:
+            "YouTube is not accessible from this server and the knowledge-only fallback also failed. Please try again.",
+        });
+      }
     } else {
       return res.status(502).json({
-        error:
-          inputType === "youtube"
-            ? "Could not access this video. Check the link and try again."
-            : "Could not find a matching recording for that name. Try a YouTube link or a more specific name.",
+        error: "Could not find a matching recording for that name. Try a YouTube link or a more specific name.",
       });
     }
   }
@@ -319,6 +340,22 @@ router.post("/songs/:id/reanalyze", async (req, res) => {
           }
         } else {
           return res.status(502).json({ error: "That video is unavailable. The dossier could not be refreshed." });
+        }
+      } else if (inputType === "youtube") {
+        // Unrecognised YouTube error in re-analysis — oEmbed → knowledge-only last resort
+        req.log.warn({ err }, "Unrecognised YouTube error during re-analysis — attempting oEmbed fallback");
+        const oEmbedTitle = await fetchYouTubeOEmbedTitle(inputValue);
+        if (!oEmbedTitle) {
+          return res.status(503).json({
+            error: "YouTube is not accessible from this server. Re-analysis unavailable for this entry.",
+          });
+        }
+        try {
+          metadata = await generateFromKnowledgeOnly(oEmbedTitle, activeProvider, activeModel);
+          generationNote = "Dossier regenerated from knowledge only — YouTube audio could not be accessed from this server.";
+        } catch (fallbackErr) {
+          req.log.error({ fallbackErr }, "Knowledge-only fallback failed during re-analysis after YouTube block");
+          return res.status(503).json({ error: "Re-analysis failed. Please try again." });
         }
       } else {
         return res.status(502).json({ error: "Re-analysis failed. Please try again." });
