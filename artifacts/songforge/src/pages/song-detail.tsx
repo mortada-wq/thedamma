@@ -239,9 +239,17 @@ export function SongDetail() {
               <span className="font-medium text-foreground">{m.composer}</span>
             </div>
           )}
-          <div className="flex items-center gap-1.5 text-sm text-muted-foreground ml-auto">
-            <Clock className="w-3.5 h-3.5" />
-            <span>Last analyzed: {new Date(song.analyzedAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}</span>
+          <div className="flex flex-col items-end gap-1 text-sm text-muted-foreground ml-auto">
+            <div className="flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5" />
+              <span>Added: {new Date(song.createdAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}</span>
+            </div>
+            {song.analyzedAt !== song.createdAt && (
+              <div className="flex items-center gap-1.5">
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>Last analyzed: {new Date(song.analyzedAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
