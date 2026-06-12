@@ -397,6 +397,53 @@ export const DeleteUserParams = zod.object({
 
 
 /**
+ * Runs a knowledge-only DNA-focused prompt and merges maqamat, iqaat, and ornamentation into the song's metadata
+ * @summary Re-analyze Musical DNA for an existing song
+ */
+export const ReanalyzeDnaParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ReanalyzeDnaResponse = zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "singer": zod.string(),
+  "era": zod.string(),
+  "geography": zod.string(),
+  "inputType": zod.enum(['youtube', 'name', 'file']),
+  "inputValue": zod.string(),
+  "metadata": zod.object({
+  "title": zod.string(),
+  "singer": zod.string().describe('Performing singer(s)'),
+  "composer": zod.string(),
+  "era": zod.string().describe('Time period \/ musical era'),
+  "geography": zod.string().describe('Region or country of origin'),
+  "history": zod.string().describe('Historical and cultural background'),
+  "subject": zod.string().describe('Main theme or subject of the song'),
+  "relatedSubjects": zod.array(zod.string()),
+  "dialect": zod.string().describe('Language and dialect of the lyrics'),
+  "instruments": zod.array(zod.string()).describe('All instruments used'),
+  "voices": zod.array(zod.string()).describe('All distinct voices \/ vocal parts'),
+  "relatedWorks": zod.array(zod.string()),
+  "transcription": zod.string().describe('Full lyric transcription'),
+  "pronunciationNotes": zod.string().describe('Detailed notes on how to pronounce the lyrics'),
+  "track": zod.array(zod.object({
+  "timestamp": zod.string().describe('Start time of this interval, e.g. \"0:00\" or \"1:24\"'),
+  "label": zod.string().describe('Section name, e.g. \"Intro\", \"Verse 1\", \"Chorus\", \"Instrumental break\"'),
+  "instruments": zod.array(zod.string()).describe('Instruments active during this interval'),
+  "vocals": zod.string().describe('Vocal description for this interval (which voices, harmony, solo, etc.)'),
+  "notes": zod.string().describe('Musical notes — key, tempo, mode, melodic motion, dynamics')
+}).describe('A single interval in the detailed track breakdown')).describe('Interval-by-interval breakdown of the music'),
+  "maqamat": zod.array(zod.string()).optional().describe('Melodic modes (Maqamat) present in the recording. Each entry names the maqam and its tonic, e.g. \"Bayat — tonic: D, lowered 2nd & 6th\" or \"Sikah — tonic: E half-flat, characteristic neutral 3rd\".\n'),
+  "iqaat": zod.array(zod.string()).optional().describe('Rhythmic cycles (Iqa\'at) used. Each entry includes the name and time signature, e.g. \"Maqsum 4\/4\", \"Chobi 6\/8\", \"Sama\'i Thaqil 10\/8\".\n'),
+  "ornamentation": zod.string().nullish().describe('Description of specific vocal and instrumental ornamentation techniques heard: melisma (tahrir), glottal ornaments, messa di voce, portamento, mordent, trill, vibrato, layali\/mawwal phrases, etc.\n')
+}).describe('Full structured musicological metadata for a song'),
+  "createdAt": zod.string(),
+  "generationNote": zod.string().optional().describe('Present only when audio extraction was unavailable and the dossier was generated from knowledge only. Shown as an informational notice in the UI.\n')
+})
+
+
+/**
  * @summary Get a single song
  */
 export const GetSongParams = zod.object({

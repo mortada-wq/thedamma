@@ -1,5 +1,6 @@
 import { readFile, rm } from "node:fs/promises";
 import path from "node:path";
+import { z } from "zod";
 import { ai } from "@workspace/integrations-gemini-ai";
 import { isRateLimitError } from "@workspace/integrations-gemini-ai/batch";
 import { anthropic } from "@workspace/integrations-anthropic-ai";
@@ -545,6 +546,120 @@ Listen to the audio and provide: exact lyrics transcription in the original lang
   } finally {
     await rm(converted.tempDir, { recursive: true, force: true }).catch(() => {});
   }
+}
+
+// ---------------------------------------------------------------------------
+// DNA-only re-analysis (maqamat, iqaat, ornamentation)
+// ---------------------------------------------------------------------------
+
+const DNA_SYSTEM_PROMPT = `You are an expert ethnomusicologist specialising in Arab and Iraqi music traditions.
+You will be given the title and singer of a known song. Your only task is to identify and describe its Musical DNA:
+1. Maqamat (melodic modes) — list every maqam present with its name, tonic, and characteristic interval features.
+2. Iqa'at (rhythmic cycles) — list every iqa' with name and time signature (e.g. "Maqsum 4/4").
+3. Ornamentation — describe the vocal and instrumental ornament techniques characteristic of this song/performer (melisma, glottal ornaments, portamento, trill, vibrato, mawwal, tahrir, etc.).
+For non-Arab/Iraqi music return empty arrays for maqamat and iqaat.
+Always return all three fields even if empty.`;
+
+const DNA_JSON_FIELDS_SPEC = `Return ONLY a valid JSON object with exactly these three fields:
+{
+  "maqamat": string[],
+  "iqaat": string[],
+  "ornamentation": string
+}
+No markdown, no code fences, no explanation — only the raw JSON object.`;
+
+function buildDnaResponseSchema() {
+  const stringArray = { type: "array" as const, items: { type: "string" as const } };
+  return {
+    type: "object" as const,
+    properties: {
+      maqamat: stringArray,
+      iqaat: stringArray,
+      ornamentation: { type: "string" as const },
+    },
+    required: ["maqamat", "iqaat", "ornamentation"],
+  };
+}
+
+const DnaResultSchema = z.object({
+  maqamat: z.array(z.string()),
+  iqaat: z.array(z.string()),
+  ornamentation: z.string(),
+});
+
+export type DnaResult = z.infer<typeof DnaResultSchema>;
+
+function parseDnaResponse(raw: string): DnaResult {
+  const stripped = raw
+    .replace(/^```(?:json)?\s*/im, "")
+    .replace(/\s*```\s*$/m, "")
+    .trim();
+  const match = stripped.match(/\{[\s\S]*\}/);
+  if (!match) throw new Error("No JSON object found in DNA model response");
+  return DnaResultSchema.parse(JSON.parse(match[0]));
+}
+
+export async function generateDnaOnly(
+  title: string,
+  singer: string,
+  provider = "gemini",
+  model = "gemini-2.0-flash",
+): Promise<DnaResult> {
+  if (provider === "flamingo") {
+    throw new Error("Music Flamingo requires audio. Choose Gemini, Claude, DeepSeek, or Silicon Flow for DNA re-analysis.");
+  }
+
+  const userPrompt = `Song title: "${title}"
+Performer: "${singer}"
+
+Identify the Musical DNA for this song: maqamat, iqa'at, and ornamentation techniques.`;
+
+  let raw: string;
+
+  if (provider === "gemini") {
+    raw = await callGeminiWithRetry(async () => {
+      const response = await ai.models.generateContent({
+        model,
+        contents: [{ role: "user", parts: [{ text: userPrompt }] }],
+        config: {
+          systemInstruction: DNA_SYSTEM_PROMPT,
+          responseMimeType: "application/json",
+          responseSchema: buildDnaResponseSchema(),
+          maxOutputTokens: 2048,
+        },
+      });
+      const text = response.text;
+      if (!text) throw new Error("Empty response from Gemini");
+      return text;
+    });
+  } else if (provider === "claude") {
+    raw = await callClaude(model, DNA_SYSTEM_PROMPT + "\n\n" + DNA_JSON_FIELDS_SPEC, userPrompt);
+  } else if (provider === "deepseek") {
+    const apiKey = process.env.DEEPSEEK_API_KEY;
+    if (!apiKey) throw new Error("DEEPSEEK_API_KEY is not set.");
+    raw = await callOpenAICompatible(
+      "https://api.deepseek.com/v1",
+      apiKey,
+      model,
+      DNA_SYSTEM_PROMPT + "\n\n" + DNA_JSON_FIELDS_SPEC,
+      userPrompt,
+    );
+  } else if (provider === "siliconflow") {
+    const apiKey = process.env.SILICON_FLOW_API_KEY;
+    if (!apiKey) throw new Error("SILICON_FLOW_API_KEY is not set.");
+    raw = await callOpenAICompatible(
+      "https://api.siliconflow.cn/v1",
+      apiKey,
+      model,
+      DNA_SYSTEM_PROMPT + "\n\n" + DNA_JSON_FIELDS_SPEC,
+      userPrompt,
+    );
+  } else {
+    throw new Error(`Unknown provider: ${provider}`);
+  }
+
+  logger.info({ title, singer, provider, model }, "DNA-only re-analysis generated");
+  return parseDnaResponse(raw);
 }
 
 // ---------------------------------------------------------------------------

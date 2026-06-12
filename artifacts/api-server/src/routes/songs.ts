@@ -4,7 +4,7 @@ import { desc, eq } from "drizzle-orm";
 import multer from "multer";
 import { db, songsTable, type Song as DbSong } from "@workspace/db";
 import { GenerateSongBody, GetSongParams, DeleteSongParams } from "@workspace/api-zod";
-import { classifyInput, generateSongMetadata, generateFromKnowledgeOnly, generateFromUploadedAudio, isAllowedYouTubeUrl, isBotCheckError } from "../lib/songMetadata";
+import { classifyInput, generateSongMetadata, generateFromKnowledgeOnly, generateFromUploadedAudio, generateDnaOnly, isAllowedYouTubeUrl, isBotCheckError } from "../lib/songMetadata";
 import { getSettings } from "./admin";
 import { isVideoUnavailableError, isYtDlpUnavailableError, fetchYouTubeOEmbedTitle } from "../lib/audioExtraction";
 
@@ -241,6 +241,45 @@ router.post("/songs", async (req, res) => {
 
   const serialized = serialize(row);
   return res.status(201).json(generationNote ? { ...serialized, generationNote } : serialized);
+});
+
+router.post("/songs/:id/reanalyze-dna", async (req, res) => {
+  const parsed = GetSongParams.safeParse(req.params);
+  if (!parsed.success) return res.status(404).json({ error: "Song not found" });
+
+  const [current] = await db.select().from(songsTable).where(eq(songsTable.id, parsed.data.id));
+  if (!current) return res.status(404).json({ error: "Song not found" });
+
+  const { activeProvider, activeModel } = await getSettings();
+  req.log.info({ id: parsed.data.id, activeProvider, activeModel }, "Re-analyzing Musical DNA");
+
+  let dna;
+  try {
+    dna = await generateDnaOnly(
+      current.metadata?.title || current.title,
+      current.metadata?.singer || current.singer,
+      activeProvider,
+      activeModel,
+    );
+  } catch (err) {
+    req.log.error({ err }, "DNA re-analysis failed");
+    return res.status(502).json({ error: "DNA re-analysis failed. Please try again." });
+  }
+
+  const mergedMetadata = {
+    ...current.metadata,
+    maqamat: dna.maqamat,
+    iqaat: dna.iqaat,
+    ornamentation: dna.ornamentation,
+  };
+
+  const [updated] = await db
+    .update(songsTable)
+    .set({ metadata: mergedMetadata })
+    .where(eq(songsTable.id, parsed.data.id))
+    .returning();
+
+  return res.json(serialize(updated));
 });
 
 router.get("/songs/:id", async (req, res) => {

@@ -1833,6 +1833,77 @@ export const useDeleteUser = <TError = ErrorType<unknown>,
       return useMutation(getDeleteUserMutationOptions(options));
     }
 
+export const getReanalyzeDnaUrl = (id: number,) => {
+
+
+
+
+  return `/api/songs/${id}/reanalyze-dna`
+}
+
+/**
+ * Runs a knowledge-only DNA-focused prompt and merges maqamat, iqaat, and ornamentation into the song's metadata
+ * @summary Re-analyze Musical DNA for an existing song
+ */
+export const reanalyzeDna = async (id: number, options?: RequestInit): Promise<Song> => {
+
+  return customFetch<Song>(getReanalyzeDnaUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getReanalyzeDnaMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reanalyzeDna>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reanalyzeDna>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['reanalyzeDna'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reanalyzeDna>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  reanalyzeDna(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReanalyzeDnaMutationResult = NonNullable<Awaited<ReturnType<typeof reanalyzeDna>>>
+
+    export type ReanalyzeDnaMutationError = ErrorType<Error>
+
+    /**
+ * @summary Re-analyze Musical DNA for an existing song
+ */
+export const useReanalyzeDna = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reanalyzeDna>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reanalyzeDna>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getReanalyzeDnaMutationOptions(options));
+    }
+
 export const getGetSongUrl = (id: number,) => {
 
 

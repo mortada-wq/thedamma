@@ -1,7 +1,8 @@
 import { useParams, useLocation } from "wouter";
 import { 
   useGetSong, 
-  useDeleteSong, 
+  useDeleteSong,
+  useReanalyzeDna,
   getGetSongQueryKey, 
   getListSongsQueryKey, 
   getGetSongStatsQueryKey 
@@ -14,7 +15,7 @@ import { downloadJson } from "@/lib/export";
 import { useToast } from "@/hooks/use-toast";
 import { 
   ArrowLeft, Download, Trash2, User, Globe, Clock, BookOpen, 
-  Mic2, Music2, Languages, ListMusic, FileText, Dna
+  Mic2, Music2, Languages, ListMusic, FileText, Dna, RefreshCw
 } from "lucide-react";
 import { Link } from "wouter";
 import {
@@ -54,6 +55,18 @@ export function SongDetail() {
     }
   });
 
+  const reanalyzeDna = useReanalyzeDna({
+    mutation: {
+      onSuccess: (updated) => {
+        queryClient.setQueryData(getGetSongQueryKey(id), updated);
+        toast({ title: "Musical DNA added." });
+      },
+      onError: () => {
+        toast({ title: "Re-analysis failed. Please try again.", variant: "destructive" });
+      }
+    }
+  });
+
   if (isLoading) {
     return (
       <div className="max-w-4xl mx-auto space-y-8">
@@ -80,6 +93,7 @@ export function SongDetail() {
   }
 
   const m = song.metadata;
+  const missingDna = !m.maqamat?.length && !m.iqaat?.length && !m.ornamentation;
 
   const handleExport = () => {
     downloadJson(song, `damma-${song.id}-${song.title.toLowerCase().replace(/\\s+/g, '-')}.json`);
@@ -94,6 +108,19 @@ export function SongDetail() {
           <ArrowLeft className="w-4 h-4 mr-2" /> Back to Library
         </Link>
         <div className="flex items-center gap-3">
+          {missingDna && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => reanalyzeDna.mutate({ id: song.id })}
+              disabled={reanalyzeDna.isPending}
+              className="rounded-full bg-transparent border-brand-blue/50 text-brand-blue hover:bg-brand-blue/10 hover:text-brand-blue active:scale-[0.98] transition-transform"
+              data-testid="button-reanalyze-dna"
+            >
+              <RefreshCw className={`w-4 h-4 mr-2 ${reanalyzeDna.isPending ? "animate-spin" : ""}`} />
+              {reanalyzeDna.isPending ? "Analyzing..." : "Re-analyze DNA"}
+            </Button>
+          )}
           <Button variant="outline" size="sm" onClick={handleExport} className="rounded-full bg-transparent border-brand-blue/50 text-brand-blue hover:bg-brand-blue/10 hover:text-brand-blue active:scale-[0.98] transition-transform" data-testid="button-export-single">
             <Download className="w-4 h-4 mr-2" /> Export JSON
           </Button>
