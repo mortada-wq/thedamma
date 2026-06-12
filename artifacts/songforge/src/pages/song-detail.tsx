@@ -239,6 +239,10 @@ export function SongDetail() {
               <span className="font-medium text-foreground">{m.composer}</span>
             </div>
           )}
+          <div className="flex items-center gap-1.5 text-sm text-muted-foreground ml-auto">
+            <Clock className="w-3.5 h-3.5" />
+            <span>Last analyzed: {new Date(song.analyzedAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}</span>
+          </div>
         </div>
       </div>
 

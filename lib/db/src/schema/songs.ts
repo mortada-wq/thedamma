@@ -44,6 +44,7 @@ export const songsTable = pgTable("songs", {
   inputValue: text("input_value").notNull(),
   metadata: jsonb("metadata").$type<SongMetadata>().notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  analyzedAt: timestamp("analyzed_at").defaultNow().notNull(),
 });
 
 export const insertSongSchema = createInsertSchema(songsTable).omit({

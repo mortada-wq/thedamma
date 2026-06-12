@@ -26,6 +26,7 @@ function serialize(row: DbSong) {
     inputValue: row.inputValue,
     metadata: row.metadata,
     createdAt: row.createdAt.toISOString(),
+    analyzedAt: row.analyzedAt.toISOString(),
   };
 }
 
@@ -393,6 +394,7 @@ router.post("/songs/:id/commit-draft", async (req, res) => {
       era: metadata.era || current.era,
       geography: metadata.geography || current.geography,
       metadata,
+      analyzedAt: new Date(),
     })
     .where(eq(songsTable.id, parsed.data.id))
     .returning();
@@ -434,7 +436,7 @@ router.post("/songs/:id/reanalyze-dna", async (req, res) => {
 
   const [updated] = await db
     .update(songsTable)
-    .set({ metadata: mergedMetadata })
+    .set({ metadata: mergedMetadata, analyzedAt: new Date() })
     .where(eq(songsTable.id, parsed.data.id))
     .returning();
 

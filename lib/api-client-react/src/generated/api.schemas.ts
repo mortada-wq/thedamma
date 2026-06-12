@@ -89,6 +89,8 @@ export interface Song {
   inputValue: string;
   metadata: SongMetadata;
   createdAt: string;
+  /** ISO-8601 timestamp of when the dossier was last analyzed or re-analyzed */
+  analyzedAt: string;
   /** Present only when audio extraction was unavailable and the dossier was generated from knowledge only. Shown as an informational notice in the UI.
    */
   generationNote?: string;
