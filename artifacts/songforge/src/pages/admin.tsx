@@ -28,7 +28,7 @@ const PROVIDERS: {
   {
     id: "gemini",
     label: "Gemini",
-    description: "Google Gemini via Replit proxy — no API key required.",
+    description: "Google Gemini — configured via server-side API credentials.",
     defaultModel: "gemini-2.0-flash",
     supportsAudio: true,
   },
@@ -45,7 +45,7 @@ const PROVIDERS: {
   {
     id: "claude",
     label: "Claude",
-    description: "Anthropic Claude via Replit proxy — no API key required.",
+    description: "Anthropic Claude — configured via server-side API credentials.",
     defaultModel: "claude-sonnet-4-6",
     supportsAudio: false,
   },
@@ -310,7 +310,7 @@ export function Admin() {
             <p className="text-xs text-muted-foreground leading-relaxed">
               {current.audioOnly
                 ? <>Optionally set <code className="font-mono bg-secondary px-1 py-0.5 rounded text-foreground">{current.envVar}</code> for higher rate limits. Works without it.</>
-                : <>Requires <code className="font-mono bg-secondary px-1 py-0.5 rounded text-foreground">{current.envVar}</code> in the Replit Secrets panel.</>}
+                : <>Requires <code className="font-mono bg-secondary px-1 py-0.5 rounded text-foreground">{current.envVar}</code> to be set as a server environment variable.</>}
             </p>
           </div>
         )}

@@ -356,6 +356,179 @@ paths:
             application/json:
               schema:
                 type: object
+  /projects/{projectId}/members:
+    get:
+      operationId: listProjectMembers
+      tags: [projects]
+      summary: List project members
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      responses:
+        "200":
+          description: Project members
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProjectMember"
+    post:
+      operationId: addProjectMember
+      tags: [projects]
+      summary: Invite a user to the project by email (owner only)
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InviteInput"
+      responses:
+        "200":
+          description: Invite result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InviteResult"
+  /projects/{projectId}/members/{userId}:
+    delete:
+      operationId: removeProjectMember
+      tags: [projects]
+      summary: Remove a member, or leave the project
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Removed
+  /projects/{projectId}/tasks:
+    get:
+      operationId: listTasks
+      tags: [projects]
+      summary: List tasks for a project
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      responses:
+        "200":
+          description: Tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Task"
+    post:
+      operationId: createTask
+      tags: [projects]
+      summary: Create a task
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewTaskInput"
+      responses:
+        "201":
+          description: Created task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+  /projects/{projectId}/tasks/{taskId}:
+    patch:
+      operationId: patchTask
+      tags: [projects]
+      summary: Update a task
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskPatch"
+      responses:
+        "200":
+          description: Updated task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+    delete:
+      operationId: deleteTask
+      tags: [projects]
+      summary: Delete a task
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+  /projects/{projectId}/tasks/suggest:
+    post:
+      operationId: suggestTasks
+      tags: [projects]
+      summary: AI-generated task suggestions for a project
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      responses:
+        "200":
+          description: Suggested tasks
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskSuggestions"
+  /projects/{projectId}/messages:
+    get:
+      operationId: listProjectMessages
+      tags: [projects]
+      summary: Poll project chat messages (supports ?after=&limit= query params)
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      responses:
+        "200":
+          description: Chat messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProjectChatMessage"
+    post:
+      operationId: sendProjectMessage
+      tags: [projects]
+      summary: Send a chat message (mention @ai for an AI reply)
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewChatMessageInput"
+      responses:
+        "201":
+          description: Sent message (and optional AI reply)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatPostResponse"
   /admin/users:
     get:
       operationId: listUsers
@@ -1048,8 +1221,147 @@ components:
           type: boolean
         createdAt:
           type: string
+        role:
+          type: string
         entries:
           type: array
           items:
             $ref: "#/components/schemas/Entry"
-      required: [id, title, category, provider, isPublic, createdAt, entries]
+      required: [id, title, category, provider, isPublic, createdAt, role, entries]
+    ProjectMember:
+      type: object
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        role:
+          type: string
+        addedAt:
+          type: string
+      required: [id, email, role, addedAt]
+    InviteResult:
+      type: object
+      properties:
+        found:
+          type: boolean
+        pending:
+          type: boolean
+        added:
+          type: boolean
+        id:
+          type: integer
+        email:
+          type: string
+        role:
+          type: string
+      required: [found]
+    Task:
+      type: object
+      properties:
+        id:
+          type: integer
+        projectId:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [todo, in_progress, done]
+        assigneeId:
+          type: integer
+          nullable: true
+        assigneeEmail:
+          type: string
+          nullable: true
+        createdBy:
+          type: integer
+        dueDate:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required: [id, projectId, title, status, createdBy, createdAt, updatedAt]
+    NewTaskInput:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        assigneeId:
+          type: integer
+        dueDate:
+          type: string
+      required: [title]
+    TaskPatch:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [todo, in_progress, done]
+        assigneeId:
+          type: integer
+          nullable: true
+        dueDate:
+          type: string
+          nullable: true
+    TaskSuggestion:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+      required: [title, description]
+    TaskSuggestions:
+      type: object
+      properties:
+        suggestions:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaskSuggestion"
+      required: [suggestions]
+    ProjectChatMessage:
+      type: object
+      properties:
+        id:
+          type: integer
+        content:
+          type: string
+        createdAt:
+          type: string
+        senderId:
+          type: integer
+          nullable: true
+        isAi:
+          type: boolean
+        senderEmail:
+          type: string
+          nullable: true
+      required: [id, content, createdAt, isAi]
+    NewChatMessageInput:
+      type: object
+      properties:
+        content:
+          type: string
+      required: [content]
+    ChatPostResponse:
+      type: object
+      properties:
+        message:
+          $ref: "#/components/schemas/ProjectChatMessage"
+        aiReply:
+          $ref: "#/components/schemas/ProjectChatMessage"
+          nullable: true
+      required: [message]

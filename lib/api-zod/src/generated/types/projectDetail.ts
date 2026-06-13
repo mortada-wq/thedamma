@@ -15,5 +15,6 @@ export interface ProjectDetail {
   summary?: string | null;
   isPublic: boolean;
   createdAt: string;
+  role: string;
   entries: Entry[];
 }

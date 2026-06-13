@@ -26,7 +26,7 @@ A musicological knowledge base: paste a YouTube link or type a song name, and AI
 - DB schema: `lib/db/src/schema/songs.ts` (`songsTable`, `SongMetadata`/`TrackSegment` types).
 - Backend routes: `artifacts/api-server/src/routes/songs.ts`; AI generation helper: `artifacts/api-server/src/lib/songMetadata.ts`.
 - Frontend (React+Vite): `artifacts/songforge/src` — `pages/home.tsx`, `pages/song-detail.tsx`, components in `components/`, theme in `index.css`.
-- OpenAI access: `@workspace/integrations-openai-ai-server` (via Replit AI Integrations proxy).
+- OpenAI access: `@workspace/integrations-openai-ai-server`.
 
 ## Architecture decisions
 

@@ -46,7 +46,7 @@ monorepo.
 | Backend | Express 5 (Node.js 24, TypeScript 5.9) |
 | Database | PostgreSQL via Drizzle ORM |
 | Validation | Zod (`zod/v4`) + `drizzle-zod` |
-| AI | OpenAI through the Replit AI Integrations proxy |
+| AI | OpenAI, Gemini, and Anthropic via server-side API credentials |
 | API codegen | Orval — generates React Query hooks and Zod schemas from the OpenAPI spec |
 | Build | esbuild |
 

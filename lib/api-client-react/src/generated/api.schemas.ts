@@ -298,7 +298,98 @@ export interface ProjectDetail {
   summary?: string | null;
   isPublic: boolean;
   createdAt: string;
+  role: string;
   entries: Entry[];
+}
+
+export interface ProjectMember {
+  id: number;
+  email: string;
+  role: string;
+  addedAt: string;
+}
+
+export interface InviteResult {
+  found: boolean;
+  pending?: boolean;
+  added?: boolean;
+  id?: number;
+  email?: string;
+  role?: string;
+}
+
+export type TaskStatus = typeof TaskStatus[keyof typeof TaskStatus];
+
+
+export const TaskStatus = {
+  todo: 'todo',
+  in_progress: 'in_progress',
+  done: 'done',
+} as const;
+
+export interface Task {
+  id: number;
+  projectId: number;
+  title: string;
+  description?: string | null;
+  status: TaskStatus;
+  assigneeId?: number | null;
+  assigneeEmail?: string | null;
+  createdBy: number;
+  dueDate?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NewTaskInput {
+  title: string;
+  description?: string;
+  assigneeId?: number;
+  dueDate?: string;
+}
+
+export type TaskPatchStatus = typeof TaskPatchStatus[keyof typeof TaskPatchStatus];
+
+
+export const TaskPatchStatus = {
+  todo: 'todo',
+  in_progress: 'in_progress',
+  done: 'done',
+} as const;
+
+export interface TaskPatch {
+  title?: string;
+  description?: string | null;
+  status?: TaskPatchStatus;
+  assigneeId?: number | null;
+  dueDate?: string | null;
+}
+
+export interface TaskSuggestion {
+  title: string;
+  description: string;
+}
+
+export interface TaskSuggestions {
+  suggestions: TaskSuggestion[];
+}
+
+export interface ProjectChatMessage {
+  id: number;
+  content: string;
+  createdAt: string;
+  senderId?: number | null;
+  isAi: boolean;
+  senderEmail?: string | null;
+}
+
+export interface NewChatMessageInput {
+  content: string;
+}
+
+export interface ChatPostResponse {
+  message: ProjectChatMessage;
+  aiReply?: ProjectChatMessage | null;
 }
 
 export type Logout200 = {

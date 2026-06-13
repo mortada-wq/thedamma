@@ -8,6 +8,10 @@ import {
 } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { TaskBoard } from "@/components/project/task-board";
+import { TeamPanel } from "@/components/project/team-panel";
+import { ProjectChat } from "@/components/project/project-chat";
 import { ArrowLeft, Plus, Trash2, Download, Globe, Lock, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -122,74 +126,98 @@ export function ProjectDetail() {
         </div>
       </div>
 
-      {/* Add entry */}
-      <div className="mb-6 flex gap-2">
-        <Input
-          value={inputUrl}
-          onChange={(e) => setInputUrl(e.target.value)}
-          placeholder="Paste a link, image URL, YouTube URL, or describe an input..."
-          className="flex-1"
-          onKeyDown={(e) => e.key === "Enter" && !adding && handleAddEntry()}
-          disabled={adding}
-        />
-        <Button
-          onClick={handleAddEntry}
-          disabled={adding || !inputUrl.trim()}
-          className="gap-2 rounded-full shrink-0"
-        >
-          {adding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-          {adding ? "Processing..." : "Add entry"}
-        </Button>
-      </div>
+      {/* Tabs */}
+      <Tabs defaultValue="entries">
+        <TabsList className="mb-6">
+          <TabsTrigger value="entries">Entries</TabsTrigger>
+          <TabsTrigger value="tasks">Tasks</TabsTrigger>
+          <TabsTrigger value="team">Team</TabsTrigger>
+          <TabsTrigger value="chat">Chat</TabsTrigger>
+        </TabsList>
 
-      {/* Entries */}
-      {project.entries.length === 0 && (
-        <div className="text-center py-16 text-muted-foreground">
-          <p className="text-sm">No entries yet. Add your first input above — AI will analyze it and generate descriptions.</p>
-        </div>
-      )}
+        <TabsContent value="entries">
+          {/* Add entry */}
+          <div className="mb-6 flex gap-2">
+            <Input
+              value={inputUrl}
+              onChange={(e) => setInputUrl(e.target.value)}
+              placeholder="Paste a link, image URL, YouTube URL, or describe an input..."
+              className="flex-1"
+              onKeyDown={(e) => e.key === "Enter" && !adding && handleAddEntry()}
+              disabled={adding}
+            />
+            <Button
+              onClick={handleAddEntry}
+              disabled={adding || !inputUrl.trim()}
+              className="gap-2 rounded-full shrink-0"
+            >
+              {adding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+              {adding ? "Processing..." : "Add entry"}
+            </Button>
+          </div>
 
-      <div className="space-y-4">
-        {project.entries.map((entry, idx) => (
-          <div key={entry.id} className="rounded-2xl border border-border bg-card overflow-hidden group">
-            <div className="flex items-start gap-3 p-4 border-b border-border/50">
-              <span className="text-xs font-mono text-muted-foreground mt-0.5 shrink-0 w-5">
-                {idx + 1}
-              </span>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-foreground break-all">{entry.inputUrl}</p>
-                {entry.aiQuestion && (
-                  <p className="text-xs text-brand-blue mt-1.5 italic">
-                    AI: {entry.aiQuestion}
-                  </p>
+          {/* Entries */}
+          {project.entries.length === 0 && (
+            <div className="text-center py-16 text-muted-foreground">
+              <p className="text-sm">No entries yet. Add your first input above — AI will analyze it and generate descriptions.</p>
+            </div>
+          )}
+
+          <div className="space-y-4">
+            {project.entries.map((entry, idx) => (
+              <div key={entry.id} className="rounded-2xl border border-border bg-card overflow-hidden group">
+                <div className="flex items-start gap-3 p-4 border-b border-border/50">
+                  <span className="text-xs font-mono text-muted-foreground mt-0.5 shrink-0 w-5">
+                    {idx + 1}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-foreground break-all">{entry.inputUrl}</p>
+                    {entry.aiQuestion && (
+                      <p className="text-xs text-brand-blue mt-1.5 italic">
+                        AI: {entry.aiQuestion}
+                      </p>
+                    )}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={`h-7 w-7 p-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ${
+                      deletingId === entry.id ? "text-red-400 hover:bg-red-400/10" : "text-muted-foreground"
+                    }`}
+                    onClick={() => handleDeleteEntry(entry.id)}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+                {entry.descriptions.length > 0 && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-border/50">
+                    {entry.descriptions.map((desc) => (
+                      <div key={desc.label} className="p-4">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+                          {desc.label}
+                        </p>
+                        <p className="text-sm text-foreground leading-relaxed">{desc.text}</p>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className={`h-7 w-7 p-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ${
-                  deletingId === entry.id ? "text-red-400 hover:bg-red-400/10" : "text-muted-foreground"
-                }`}
-                onClick={() => handleDeleteEntry(entry.id)}
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </Button>
-            </div>
-            {entry.descriptions.length > 0 && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-border/50">
-                {entry.descriptions.map((desc) => (
-                  <div key={desc.label} className="p-4">
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
-                      {desc.label}
-                    </p>
-                    <p className="text-sm text-foreground leading-relaxed">{desc.text}</p>
-                  </div>
-                ))}
-              </div>
-            )}
+            ))}
           </div>
-        ))}
-      </div>
+        </TabsContent>
+
+        <TabsContent value="tasks">
+          <TaskBoard projectId={projectId} />
+        </TabsContent>
+
+        <TabsContent value="team">
+          <TeamPanel projectId={projectId} isOwner={project.role === "owner"} />
+        </TabsContent>
+
+        <TabsContent value="chat">
+          <ProjectChat projectId={projectId} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

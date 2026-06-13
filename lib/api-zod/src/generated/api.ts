@@ -272,6 +272,7 @@ export const GetProjectResponse = zod.object({
   "summary": zod.string().nullish(),
   "isPublic": zod.boolean(),
   "createdAt": zod.string(),
+  "role": zod.string(),
   "entries": zod.array(zod.object({
   "id": zod.number(),
   "projectId": zod.number(),
@@ -349,6 +350,175 @@ export const ExportProjectParams = zod.object({
 export const ExportProjectResponse = zod.object({
 
 }).passthrough()
+
+
+/**
+ * @summary List project members
+ */
+export const ListProjectMembersParams = zod.object({
+  "projectId": zod.coerce.number()
+})
+
+export const ListProjectMembersResponseItem = zod.object({
+  "id": zod.number(),
+  "email": zod.string(),
+  "role": zod.string(),
+  "addedAt": zod.string()
+})
+export const ListProjectMembersResponse = zod.array(ListProjectMembersResponseItem)
+
+
+/**
+ * @summary Invite a user to the project by email (owner only)
+ */
+export const AddProjectMemberParams = zod.object({
+  "projectId": zod.coerce.number()
+})
+
+export const AddProjectMemberBody = zod.object({
+  "email": zod.string()
+})
+
+export const AddProjectMemberResponse = zod.object({
+  "found": zod.boolean(),
+  "pending": zod.boolean().optional(),
+  "added": zod.boolean().optional(),
+  "id": zod.number().optional(),
+  "email": zod.string().optional(),
+  "role": zod.string().optional()
+})
+
+
+/**
+ * @summary Remove a member, or leave the project
+ */
+export const RemoveProjectMemberParams = zod.object({
+  "projectId": zod.coerce.number(),
+  "userId": zod.coerce.number()
+})
+
+
+/**
+ * @summary List tasks for a project
+ */
+export const ListTasksParams = zod.object({
+  "projectId": zod.coerce.number()
+})
+
+export const ListTasksResponseItem = zod.object({
+  "id": zod.number(),
+  "projectId": zod.number(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "status": zod.enum(['todo', 'in_progress', 'done']),
+  "assigneeId": zod.number().nullish(),
+  "assigneeEmail": zod.string().nullish(),
+  "createdBy": zod.number(),
+  "dueDate": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})
+export const ListTasksResponse = zod.array(ListTasksResponseItem)
+
+
+/**
+ * @summary Create a task
+ */
+export const CreateTaskParams = zod.object({
+  "projectId": zod.coerce.number()
+})
+
+export const CreateTaskBody = zod.object({
+  "title": zod.string(),
+  "description": zod.string().optional(),
+  "assigneeId": zod.number().optional(),
+  "dueDate": zod.string().optional()
+})
+
+
+/**
+ * @summary Update a task
+ */
+export const PatchTaskParams = zod.object({
+  "projectId": zod.coerce.number(),
+  "taskId": zod.coerce.number()
+})
+
+export const PatchTaskBody = zod.object({
+  "title": zod.string().optional(),
+  "description": zod.string().nullish(),
+  "status": zod.enum(['todo', 'in_progress', 'done']).optional(),
+  "assigneeId": zod.number().nullish(),
+  "dueDate": zod.string().nullish()
+})
+
+export const PatchTaskResponse = zod.object({
+  "id": zod.number(),
+  "projectId": zod.number(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "status": zod.enum(['todo', 'in_progress', 'done']),
+  "assigneeId": zod.number().nullish(),
+  "assigneeEmail": zod.string().nullish(),
+  "createdBy": zod.number(),
+  "dueDate": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})
+
+
+/**
+ * @summary Delete a task
+ */
+export const DeleteTaskParams = zod.object({
+  "projectId": zod.coerce.number(),
+  "taskId": zod.coerce.number()
+})
+
+
+/**
+ * @summary AI-generated task suggestions for a project
+ */
+export const SuggestTasksParams = zod.object({
+  "projectId": zod.coerce.number()
+})
+
+export const SuggestTasksResponse = zod.object({
+  "suggestions": zod.array(zod.object({
+  "title": zod.string(),
+  "description": zod.string()
+}))
+})
+
+
+/**
+ * @summary Poll project chat messages (supports ?after=&limit= query params)
+ */
+export const ListProjectMessagesParams = zod.object({
+  "projectId": zod.coerce.number()
+})
+
+export const ListProjectMessagesResponseItem = zod.object({
+  "id": zod.number(),
+  "content": zod.string(),
+  "createdAt": zod.string(),
+  "senderId": zod.number().nullish(),
+  "isAi": zod.boolean(),
+  "senderEmail": zod.string().nullish()
+})
+export const ListProjectMessagesResponse = zod.array(ListProjectMessagesResponseItem)
+
+
+/**
+ * @summary Send a chat message (mention @ai for an AI reply)
+ */
+export const SendProjectMessageParams = zod.object({
+  "projectId": zod.coerce.number()
+})
+
+export const SendProjectMessageBody = zod.object({
+  "content": zod.string()
+})
 
 
 /**

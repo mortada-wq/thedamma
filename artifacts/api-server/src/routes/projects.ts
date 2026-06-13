@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { db, projectsTable, entriesTable, usersTable } from "@workspace/db";
-import { eq, desc, and, count, sql } from "drizzle-orm";
+import { db, projectsTable, entriesTable, usersTable, projectMembersTable } from "@workspace/db";
+import { eq, desc, and, count } from "drizzle-orm";
 import { z } from "zod";
 import { ai } from "@workspace/integrations-gemini-ai";
 
@@ -32,6 +32,15 @@ async function getApprovedUser(userId: number) {
     .where(eq(usersTable.id, userId))
     .limit(1);
   return user;
+}
+
+export async function getMembership(projectId: number, userId: number) {
+  const [membership] = await db
+    .select({ role: projectMembersTable.role })
+    .from(projectMembersTable)
+    .where(and(eq(projectMembersTable.projectId, projectId), eq(projectMembersTable.userId, userId)))
+    .limit(1);
+  return membership;
 }
 
 async function generateEntryContent(inputUrl: string): Promise<{
@@ -129,8 +138,9 @@ router.get("/projects", requireAuth, async (req, res) => {
       entryCount: count(entriesTable.id),
     })
     .from(projectsTable)
+    .innerJoin(projectMembersTable, eq(projectMembersTable.projectId, projectsTable.id))
     .leftJoin(entriesTable, eq(entriesTable.projectId, projectsTable.id))
-    .where(eq(projectsTable.userId, user.id))
+    .where(eq(projectMembersTable.userId, user.id))
     .groupBy(projectsTable.id)
     .orderBy(desc(projectsTable.createdAt));
 
@@ -165,6 +175,10 @@ router.post("/projects", requireAuth, async (req, res) => {
     .values({ userId: user.id, title, category, provider, summary })
     .returning();
 
+  await db
+    .insert(projectMembersTable)
+    .values({ projectId: project.id, userId: user.id, role: "owner" });
+
   req.log.info({ projectId: project.id }, "Project created");
   res.status(201).json({ ...project, entryCount: 0 });
 });
@@ -178,10 +192,16 @@ router.get("/projects/:id", requireAuth, async (req, res) => {
   }
 
   const projectId = Number(req.params.id);
+  const membership = await getMembership(projectId, user.id);
+  if (!membership) {
+    res.status(404).json({ error: "Project not found" });
+    return;
+  }
+
   const [project] = await db
     .select()
     .from(projectsTable)
-    .where(and(eq(projectsTable.id, projectId), eq(projectsTable.userId, user.id)))
+    .where(eq(projectsTable.id, projectId))
     .limit(1);
 
   if (!project) {
@@ -195,7 +215,7 @@ router.get("/projects/:id", requireAuth, async (req, res) => {
     .where(eq(entriesTable.projectId, projectId))
     .orderBy(entriesTable.createdAt);
 
-  res.json({ ...project, entries });
+  res.json({ ...project, role: membership.role, entries });
 });
 
 // ── Update project (title, isPublic) ────────────────────────────────────────
@@ -218,12 +238,8 @@ router.patch("/projects/:id", requireAuth, async (req, res) => {
   }
 
   const projectId = Number(req.params.id);
-  const [existing] = await db
-    .select({ id: projectsTable.id })
-    .from(projectsTable)
-    .where(and(eq(projectsTable.id, projectId), eq(projectsTable.userId, user.id)))
-    .limit(1);
-  if (!existing) {
+  const membership = await getMembership(projectId, user.id);
+  if (!membership || membership.role !== "owner") {
     res.status(404).json({ error: "Project not found" });
     return;
   }
@@ -246,12 +262,8 @@ router.delete("/projects/:id", requireAuth, async (req, res) => {
   }
 
   const projectId = Number(req.params.id);
-  const [existing] = await db
-    .select({ id: projectsTable.id })
-    .from(projectsTable)
-    .where(and(eq(projectsTable.id, projectId), eq(projectsTable.userId, user.id)))
-    .limit(1);
-  if (!existing) {
+  const membership = await getMembership(projectId, user.id);
+  if (!membership || membership.role !== "owner") {
     res.status(404).json({ error: "Project not found" });
     return;
   }
@@ -279,12 +291,8 @@ router.post("/projects/:id/entries", requireAuth, async (req, res) => {
   }
 
   const projectId = Number(req.params.id);
-  const [project] = await db
-    .select({ id: projectsTable.id })
-    .from(projectsTable)
-    .where(and(eq(projectsTable.id, projectId), eq(projectsTable.userId, user.id)))
-    .limit(1);
-  if (!project) {
+  const membership = await getMembership(projectId, user.id);
+  if (!membership) {
     res.status(404).json({ error: "Project not found" });
     return;
   }
@@ -316,12 +324,8 @@ router.delete("/projects/:id/entries/:entryId", requireAuth, async (req, res) =>
   const projectId = Number(req.params.id);
   const entryId = Number(req.params.entryId);
 
-  const [project] = await db
-    .select({ id: projectsTable.id })
-    .from(projectsTable)
-    .where(and(eq(projectsTable.id, projectId), eq(projectsTable.userId, user.id)))
-    .limit(1);
-  if (!project) {
+  const membership = await getMembership(projectId, user.id);
+  if (!membership) {
     res.status(404).json({ error: "Project not found" });
     return;
   }
@@ -339,10 +343,16 @@ router.get("/projects/:id/export", requireAuth, async (req, res) => {
   }
 
   const projectId = Number(req.params.id);
+  const membership = await getMembership(projectId, user.id);
+  if (!membership) {
+    res.status(404).json({ error: "Project not found" });
+    return;
+  }
+
   const [project] = await db
     .select()
     .from(projectsTable)
-    .where(and(eq(projectsTable.id, projectId), eq(projectsTable.userId, user.id)))
+    .where(eq(projectsTable.id, projectId))
     .limit(1);
   if (!project) {
     res.status(404).json({ error: "Project not found" });
